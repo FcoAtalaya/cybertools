@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCAP Anonymizer — CyberTools</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf9;--s0:#ffffff;--s1:#fafaf9;--s2:#f4f3f1;--s3:#eeede9;
+  --border:#e5e3de;--border2:#d6d3cc;
+  --danger:#b91c1c;--warn:#c2600e;--ok:#166534;
+  --text:#1a1916;--textmed:#6b6860;--textdim:#9c9a96;
+  --mono:'Inter',sans-serif;--sans:'Instrument Serif',serif;--r:3px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.5;font-weight:400;overflow:hidden}
+::selection{background:#1a191620}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--s2)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* ── APP SHELL ── */
+.app{display:flex;flex-direction:column;height:100vh}
+
+/* ── TOPBAR ── */
+.topbar{height:56px;flex-shrink:0;background:var(--s0);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;z-index:50}
+.logo{font-family:var(--sans);font-size:20px;color:var(--text);letter-spacing:-.3px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+
+/* ── BODY (sidebar + main) ── */
+.body{display:grid;grid-template-columns:280px 1fr;flex:1;overflow:hidden}
+
+/* ── LEFT CONFIG PANEL ── */
+.config-panel{background:var(--s0);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.config-scroll{flex:1;overflow-y:auto}
+
+.cfg-block{padding:16px 20px;border-bottom:1px solid var(--border)}
+.cfg-title{font-size:9px;font-weight:500;color:var(--textdim);text-transform:uppercase;letter-spacing:.9px;margin-bottom:12px}
+
+/* ── RUN AREA ── */
+.run-area{padding:14px 20px;border-top:1px solid var(--border);background:var(--s2);flex-shrink:0;display:flex;flex-direction:column;gap:7px}
+
+/* ── RIGHT PANEL ── */
+.right-panel{display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+
+/* ── TABS ── */
+.tab-bar{height:56px;flex-shrink:0;background:var(--s0);border-bottom:1px solid var(--border);display:flex;align-items:flex-end;padding:0 40px}
+.tab{font-size:11px;font-weight:400;color:var(--textmed);text-transform:uppercase;letter-spacing:.4px;padding:0 16px;height:56px;display:flex;align-items:center;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+
+.tab-content{flex:1;overflow-y:auto;padding:40px 48px}
+
+/* ── BUTTONS ── */
+button{cursor:pointer;font-family:var(--mono);transition:all .15s;border-radius:var(--r)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--textmed);font-size:11px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;padding:6px 12px}
+.btn-ghost:hover{background:var(--s2);border-color:var(--text);color:var(--text)}
+.btn-accent{background:var(--text);color:#fff;border:1px solid var(--text);font-size:11px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;padding:7px 16px;width:100%}
+.btn-accent:hover{background:#2d2b28}
+.btn-accent:disabled{background:var(--s3);color:var(--textdim);border-color:var(--border);cursor:not-allowed}
+.btn-full-ghost{background:transparent;border:1px solid var(--border2);color:var(--textmed);font-size:11px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;padding:6px 12px;width:100%;text-align:center}
+.btn-full-ghost:hover{background:var(--s2);border-color:var(--text);color:var(--text)}
+.btn-sm{padding:4px 10px;font-size:10px}
+
+/* ── BADGES ── */
+.badge{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;padding:2px 7px;border-radius:var(--r);border:1px solid;display:inline-block}
+.badge-neutral{color:var(--textmed);background:var(--s2);border-color:var(--border2)}
+.badge-ok{color:#166534;background:#f0fdf4;border-color:#86efac}
+.badge-warn{color:#92400e;background:#fffbeb;border-color:#fcd34d}
+.badge-danger{color:var(--danger);background:#fef2f2;border-color:#fca5a5}
+
+/* ── FORM ── */
+.form-label{font-size:9px;font-weight:500;color:var(--textdim);text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px}
+.form-input{width:100%;border:1px solid var(--border2);border-radius:var(--r);padding:7px 10px;font-family:monospace;font-size:11px;color:var(--text);background:var(--s0);outline:none;transition:border-color .15s;letter-spacing:1px}
+.form-input:focus{border-color:var(--text)}
+.form-input::placeholder{color:var(--textdim);letter-spacing:0;font-family:var(--mono)}
+.form-input.valid{border-color:#86efac}
+.form-input.invalid{border-color:#fca5a5}
+
+/* ── KEY VIS ── */
+.key-vis{display:flex;gap:1px;margin-top:8px;flex-wrap:wrap}
+.kv-bit{width:12px;height:12px;border-radius:1px;font-size:7px;display:flex;align-items:center;justify-content:center;font-weight:500;border:1px solid}
+.kv-1{background:#f0fdf4;border-color:#86efac;color:var(--ok)}
+.kv-0{background:var(--s2);border-color:var(--border);color:var(--textdim)}
+.kv-empty{background:var(--s3);border-color:var(--border)}
+
+/* ── DROP ZONE ── */
+.drop-zone{border:1px dashed var(--border2);border-radius:var(--r);padding:22px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:border-color .2s,background .2s;text-align:center}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--text);background:var(--s2)}
+.dz-glyph{font-size:24px;opacity:.18;filter:grayscale(1);line-height:1}
+.dz-title{font-family:var(--sans);font-size:17px;color:var(--text)}
+.dz-sub{font-size:11px;font-weight:300;color:var(--textdim);line-height:1.6}
+
+/* ── FILE LIST ── */
+.file-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r);margin-top:5px;background:var(--s0)}
+.fr-name{flex:1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-size{font-size:10px;font-weight:300;color:var(--textdim);flex-shrink:0}
+.fr-remove{background:none;border:none;color:var(--textdim);cursor:pointer;font-size:14px;padding:0 2px;line-height:1;transition:color .15s}
+.fr-remove:hover{color:var(--danger)}
+
+/* ── OPERATIONS ── */
+.op-item{display:flex;align-items:flex-start;gap:9px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;transition:background .15s,border-color .15s;user-select:none;margin-bottom:4px}
+.op-item:hover{background:var(--s2)}
+.op-item.active{background:var(--s2);border-color:var(--border2)}
+.op-chk{width:14px;height:14px;border:1px solid var(--border2);border-radius:2px;flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s}
+.op-item.active .op-chk{background:var(--text);border-color:var(--text);color:#fff}
+.op-name{font-size:11px;font-weight:400;color:var(--text)}
+.op-desc{font-size:10px;font-weight:300;color:var(--textdim);margin-top:2px;line-height:1.5}
+.op-tag{font-size:8px;font-weight:500;text-transform:uppercase;letter-spacing:.4px;padding:1px 5px;border-radius:var(--r);border:1px solid;margin-left:5px;vertical-align:middle}
+.tag-xor{color:var(--ok);border-color:#86efac;background:#f0fdf4}
+.tag-del{color:var(--danger);border-color:#fca5a5;background:#fef2f2}
+
+/* ── PROGRESS BAR ── */
+.prog-wrap{height:4px;background:var(--s3);border-radius:0;overflow:hidden}
+.prog-fill{height:100%;background:var(--text);width:0%;transition:width .3s}
+.prog-fill.ok{background:var(--ok)}
+
+/* ── CARDS ── */
+.card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r)}
+.card-hdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:9px;font-weight:500;color:var(--textdim);text-transform:uppercase;letter-spacing:.9px}
+.card-body{padding:18px}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.kpi-card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:18px;position:relative;overflow:hidden}
+.kpi-lbl{font-size:9px;font-weight:500;color:var(--textdim);text-transform:uppercase;letter-spacing:.9px;margin-bottom:6px}
+.kpi-val{font-family:var(--sans);font-size:48px;font-weight:400;line-height:1}
+.kpi-sub{font-size:11px;font-weight:300;color:var(--textdim);margin-top:4px}
+.kpi-stripe{position:absolute;bottom:0;left:0;right:0;height:2px}
+.ks-ok{background:var(--ok)}.ks-warn{background:var(--warn)}.ks-neutral{background:var(--border2)}
+
+/* ── TABLE ── */
+.data-table{width:100%;border-collapse:collapse}
+.data-table th{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;color:var(--textdim);background:var(--s1);padding:10px 16px;text-align:left;border-bottom:2px solid var(--border)}
+.data-table td{font-size:12px;font-weight:300;padding:11px 16px;border-bottom:1px solid var(--border)}
+.data-table tr:hover td{background:var(--s2)}
+.data-table tr:last-child td{border-bottom:none}
+.td-mono{font-family:monospace;font-size:11px}
+.td-anon{font-family:monospace;font-size:11px;color:var(--ok)}
+.td-excl{font-family:monospace;font-size:11px;color:var(--textdim);font-style:italic}
+.td-del{font-family:monospace;font-size:11px;color:var(--danger);text-decoration:line-through;opacity:.6}
+
+/* ── FILTERS ── */
+.filter-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.fbtn{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.3px;padding:4px 10px;border:1px solid var(--border2);border-radius:var(--r);background:transparent;color:var(--textmed);cursor:pointer;transition:all .15s}
+.fbtn:hover,.fbtn.active{background:var(--s2);border-color:var(--text);color:var(--text)}
+
+/* ── ALERT ── */
+.alert{border-left:2px solid;padding:10px 14px;font-size:12px;font-weight:300;border-radius:0 var(--r) var(--r) 0;line-height:1.6}
+.a-warn{border-color:var(--warn);background:#fff7ed}
+
+/* ── WELCOME ── */
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:360px;gap:20px;text-align:center}
+.w-glyph{font-size:36px;opacity:.15;filter:grayscale(1)}
+.w-title{font-family:var(--sans);font-size:32px;font-weight:400;letter-spacing:-.5px}
+.w-sub{font-size:13px;font-weight:300;color:var(--textdim);max-width:460px;line-height:1.7}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:560px;width:100%}
+.feat{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.feat-lbl{font-size:9px;font-weight:500;color:var(--textdim);text-transform:uppercase;letter-spacing:.9px;margin-bottom:5px}
+.feat-name{font-size:12px;font-weight:400;margin-bottom:3px}
+.feat-desc{font-size:11px;font-weight:300;color:var(--textdim);line-height:1.6}
+
+/* ── EMPTY STATE ── */
+.es{padding:48px 20px;text-align:center}
+.es-g{font-size:28px;opacity:.2;filter:grayscale(1);margin-bottom:10px}
+.es-t{font-size:13px;font-weight:300;color:var(--textdim)}
+
+/* ── EXPORT GRID ── */
+.exp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+/* ── MODAL ── */
+.modal-ov{position:fixed;inset:0;background:rgba(26,25,22,.5);display:none;align-items:center;justify-content:center;z-index:500}
+.modal-ov.open{display:flex}
+.modal{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);width:460px}
+.modal-hdr{padding:18px 24px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:var(--sans);font-size:20px;font-weight:400}
+.modal-body{padding:22px;display:flex;flex-direction:column;gap:10px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--text);color:#fff;border-radius:var(--r);padding:9px 16px;font-size:11px;z-index:600;transform:translateY(60px);opacity:0;transition:all .25s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="logo">PCAP Anonymizer</div>
+      <span class="badge badge-neutral">XOR cipher</span>
+      <span class="badge badge-neutral">100% local</span>
+    </div>
+    <div class="topbar-right">
+      <a href="https://github.com/FcoAtalaya/PCAP-Anonymizer" target="_blank"
+        style="font-size:11px;font-weight:400;color:var(--textmed);text-decoration:none;text-transform:uppercase;letter-spacing:.3px;transition:color .15s"
+        onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--textmed)'">GitHub</a>
+    </div>
+  </div>
+
+  <div class="body">
+
+    <!-- ═══ LEFT PANEL ═══ -->
+    <div class="config-panel">
+      <div class="config-scroll">
+
+        <!-- Drop -->
+        <div class="cfg-block">
+          <div class="cfg-title">Archivos PCAP</div>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+            <div class="dz-glyph">&#9632;</div>
+            <div class="dz-title">Arrastra PCAPs aqui</div>
+            <div class="dz-sub">.pcap y .pcapng<br>Multiples archivos</div>
+          </div>
+          <input type="file" id="file-input" accept=".pcap,.pcapng" multiple style="display:none" onchange="addFiles(this.files)">
+          <div id="file-list"></div>
+        </div>
+
+        <!-- Key -->
+        <div class="cfg-block">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span class="cfg-title" style="margin-bottom:0">Clave XOR — 32 bits</span>
+            <button class="btn-ghost btn-sm" onclick="genKey()">Generar</button>
+          </div>
+          <label class="form-label">Clave binaria</label>
+          <input type="text" class="form-input" id="key-input" maxlength="32"
+            placeholder="10110010110100101..."
+            oninput="onKeyInput()" spellcheck="false">
+          <div style="font-size:10px;font-weight:300;color:var(--textdim);margin-top:5px" id="key-hint">32 bits requeridos — 0 introducidos</div>
+          <div class="key-vis" id="key-vis"></div>
+        </div>
+
+        <!-- Ops -->
+        <div class="cfg-block">
+          <div class="cfg-title">Operaciones</div>
+          <div id="op-list">
+            <div class="op-item active" id="op-1" onclick="toggleOp('1')">
+              <div class="op-chk" id="opck-1">&#10003;</div>
+              <div><div class="op-name">Anonimizar IPv4 <span class="op-tag tag-xor">XOR</span></div>
+              <div class="op-desc">Cifra IPs preservando relaciones. Excluye IPs conocidas.</div></div>
+            </div>
+            <div class="op-item" id="op-2" onclick="toggleOp('2')">
+              <div class="op-chk" id="opck-2"></div>
+              <div><div class="op-name">Anonimizar IPv6 <span class="op-tag tag-xor">XOR</span></div>
+              <div class="op-desc">Clave extendida a 128 bits.</div></div>
+            </div>
+            <div class="op-item" id="op-3" onclick="toggleOp('3')">
+              <div class="op-chk" id="opck-3"></div>
+              <div><div class="op-name">Anonimizar MAC <span class="op-tag tag-xor">XOR</span></div>
+              <div class="op-desc">Cifra ultimos 24 bits. Preserva OUI del fabricante.</div></div>
+            </div>
+            <div class="op-item" id="op-4" onclick="toggleOp('4')">
+              <div class="op-chk" id="opck-4"></div>
+              <div><div class="op-name">Borrar MACs <span class="op-tag tag-del">Delete</span></div>
+              <div class="op-desc">Reemplaza todas las MACs por 00:00:00:00:00:00.</div></div>
+            </div>
+            <div class="op-item" id="op-5" onclick="toggleOp('5')">
+              <div class="op-chk" id="opck-5"></div>
+              <div><div class="op-name">Borrar payload HTTP <span class="op-tag tag-del">Delete</span></div>
+              <div class="op-desc">Vacia payload TCP en puerto 80.</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /config-scroll -->
+
+      <!-- Run -->
+      <div class="run-area">
+        <div class="prog-wrap" id="run-prog" style="display:none"><div class="prog-fill" id="run-fill"></div></div>
+        <button class="btn-accent" id="run-btn" onclick="runAnonymization()">Ejecutar anonimizacion</button>
+        <button class="btn-full-ghost" onclick="clearAll()">Limpiar todo</button>
+      </div>
+    </div>
+
+    <!-- ═══ RIGHT PANEL ═══ -->
+    <div class="right-panel">
+
+      <div class="tab-bar">
+        <div class="tab active" id="tab-welcome" onclick="showTab('welcome')">Inicio</div>
+        <div class="tab" id="tab-preview" onclick="showTab('preview')">Vista previa</div>
+        <div class="tab" id="tab-report"  onclick="showTab('report')">Informe</div>
+        <div class="tab" id="tab-export"  onclick="showTab('export')">Exportar</div>
+      </div>
+
+      <div class="tab-content">
+
+        <!-- INICIO -->
+        <div id="pane-welcome">
+          <div class="welcome">
+            <div class="w-glyph">&#9632;</div>
+            <div class="w-title">PCAP Anonymizer</div>
+            <div class="w-sub">Anonimiza capturas de red con cifrado XOR preservando las relaciones entre dispositivos. 100% local — ningun dato sale del navegador.</div>
+            <div class="feat-grid">
+              <div class="feat">
+                <div class="feat-lbl">Cifrado</div>
+                <div class="feat-name">XOR de 32 bits</div>
+                <div class="feat-desc">Determinista — la misma IP produce siempre el mismo resultado. Relaciones preservadas.</div>
+              </div>
+              <div class="feat">
+                <div class="feat-lbl">Seguridad</div>
+                <div class="feat-name">Known-plaintext</div>
+                <div class="feat-desc">IPs publicas conocidas excluidas del cifrado para evitar recuperar la clave por XOR inverso.</div>
+              </div>
+              <div class="feat">
+                <div class="feat-lbl">Salida</div>
+                <div class="feat-name">PCAP valido</div>
+                <div class="feat-desc">El archivo exportado abre en Wireshark mostrando los mismos flujos de red.</div>
+              </div>
+            </div>
+            <div style="font-size:11px;font-weight:300;color:var(--textdim)">Carga un PCAP y configura las operaciones para comenzar</div>
+          </div>
+        </div>
+
+        <!-- VISTA PREVIA -->
+        <div id="pane-preview" style="display:none">
+          <div id="prev-empty" class="es"><div class="es-g">&#9632;</div><div class="es-t">Ejecuta la anonimizacion para ver el mapeo de direcciones</div></div>
+          <div id="prev-content" style="display:none">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+              <div>
+                <div style="font-family:var(--sans);font-size:24px;letter-spacing:-.3px">Mapeo de direcciones</div>
+                <div style="font-size:11px;font-weight:300;color:var(--textdim);margin-top:3px" id="prev-sub"></div>
+              </div>
+              <span class="badge badge-ok" id="prev-count"></span>
+            </div>
+            <div class="filter-row">
+              <button class="fbtn active" onclick="setFilter('all',this)">Todos</button>
+              <button class="fbtn" onclick="setFilter('IPv4',this)">IPv4</button>
+              <button class="fbtn" onclick="setFilter('IPv6',this)">IPv6</button>
+              <button class="fbtn" onclick="setFilter('MAC',this)">MAC</button>
+              <button class="fbtn" onclick="setFilter('excluded',this)">Excluidas</button>
+            </div>
+            <div class="card"><div style="overflow-x:auto">
+              <table class="data-table">
+                <thead><tr><th>Tipo</th><th>Original</th><th>Anonimizada</th><th>Operacion</th></tr></thead>
+                <tbody id="map-tbody"></tbody>
+              </table>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- INFORME -->
+        <div id="pane-report" style="display:none">
+          <div id="rep-empty" class="es"><div class="es-g">&#9632;</div><div class="es-t">Ejecuta la anonimizacion para ver el informe</div></div>
+          <div id="rep-content" style="display:none">
+            <div style="font-family:var(--sans);font-size:24px;letter-spacing:-.3px;margin-bottom:24px">Informe de operacion</div>
+            <div class="kpi-grid" id="kpi-grid"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+              <div class="card"><div class="card-hdr"><span class="card-title">Configuracion</span></div>
+                <div style="overflow:hidden"><table class="data-table"><tbody id="rep-config"></tbody></table></div></div>
+              <div class="card"><div class="card-hdr"><span class="card-title">Estadisticas</span></div>
+                <div style="overflow:hidden"><table class="data-table"><tbody id="rep-stats"></tbody></table></div></div>
+            </div>
+            <div class="alert a-warn"><strong style="font-weight:500">Limitacion XOR</strong> — Determinista pero vulnerable a known-plaintext fuera de la lista de excluidas. Si se conoce cualquier par IP original/cifrada, la clave completa se recupera con una sola operacion XOR.</div>
+          </div>
+        </div>
+
+        <!-- EXPORTAR -->
+        <div id="pane-export" style="display:none">
+          <div id="exp-empty" class="es"><div class="es-g">&#9632;</div><div class="es-t">Ejecuta la anonimizacion para habilitar la exportacion</div></div>
+          <div id="exp-content" style="display:none">
+            <div style="font-family:var(--sans);font-size:24px;letter-spacing:-.3px;margin-bottom:24px">Exportar</div>
+            <div class="exp-grid" id="exp-grid"></div>
+          </div>
+        </div>
+
+      </div><!-- /tab-content -->
+    </div><!-- /right-panel -->
+
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<!-- MODAL -->
+<div class="modal-ov" id="modal-ov">
+  <div class="modal">
+    <div class="modal-hdr"><div class="modal-title">Procesando archivos</div></div>
+    <div class="modal-body">
+      <div class="prog-wrap"><div class="prog-fill" id="mod-fill"></div></div>
+      <div style="font-size:12px;font-weight:300;color:var(--textdim)" id="mod-msg">Iniciando...</div>
+      <div style="font-size:11px;font-weight:300;color:var(--textdim)" id="mod-sub"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S={files:[],key:'',ops:new Set(['1']),results:null};
+const FIP=new Set(['255.255.255.255','224.0.0.1','224.0.0.252','224.0.0.251','224.0.0.2','1.1.1.1','0.0.0.0','8.8.8.8','169.254.255.255']);
+const FMAC=new Set(['00:00:00:00:00:00','ff:ff:ff:ff:ff:ff','01:00:0c:cc:cc:cd']);
+const FIP6=new Set(['ff02::fb','ff02::1:3','ff02::1:2']);
+
+// XOR CIPHER
+function xorIPv4(ip,k){const p=ip.split('.').map(Number);const b=p.map(n=>n.toString(2).padStart(8,'0')).join('');const x=((parseInt(b,2)^parseInt(k,2))>>>0).toString(2).padStart(32,'0');return[0,8,16,24].map(i=>parseInt(x.slice(i,i+8),2)).join('.');}
+function xorMAC(mac,k){const b=mac.split(':').map(h=>parseInt(h,16).toString(2).padStart(8,'0')).join('');const tk=k.slice(-24);const x=((parseInt(tk,2)^parseInt(b.slice(-24),2))>>>0).toString(2).padStart(24,'0');const f=b.slice(0,24)+x;return[0,8,16,24,32,40].map(i=>parseInt(f.slice(i,i+8),2).toString(16).padStart(2,'0').toUpperCase()).join(':');}
+function xorIPv6(s,k){try{const by=exIPv6(s);if(!by)return s;const ib=by.map(b=>b.toString(2).padStart(8,'0')).join('');const ke=(k.slice(-16)+k+k).slice(0,128);const x=(BigInt('0b'+ib)^BigInt('0b'+ke)).toString(2).padStart(128,'0');return[0,16,32,48,64,80,96,112].map(i=>parseInt(x.slice(i,i+16),2).toString(16).padStart(4,'0')).join(':');}catch(e){return s;}}
+function exIPv6(s){try{if(s.includes('::')){const[l,r]=s.split('::');const left=l?l.split(':'):[],right=r?r.split(':'):[];const mid=Array(8-left.length-right.length).fill('0000');s=[...left,...mid,...right].join(':');}return s.split(':').map(g=>parseInt(g,16));}catch(e){return null;}}
+
+// PCAP
+function parsePcap(buf){const v=new DataView(buf);if(buf.byteLength<24)return{packets:[],linkType:1};const mg=v.getUint32(0,true);const ng=mg===0x0A0D0D0A;const le=mg===0xa1b2c3d4||mg===0xa1b23c4d;const pkts=[];if(ng){let o=0,lt=1;while(o+8<buf.byteLength){const bt=v.getUint32(o,true),bl=v.getUint32(o+4,true);if(bl<12||bl>buf.byteLength)break;if(bt===1)lt=v.getUint16(o+8,true);if(bt===6){const cap=v.getUint32(o+20,true),d=o+28;if(d+cap<=buf.byteLength)pkts.push({data:buf.slice(d,d+cap),ts:0,linkType:lt});}const al=(bl+3)&~3;if(al<=0)break;o+=al;}return{packets:pkts,linkType:1,isNG:true};}else{const lt=v.getUint32(20,le);let o=24;while(o+16<buf.byteLength){const ts=v.getUint32(o,le)+v.getUint32(o+4,le)/1e6;const inc=v.getUint32(o+8,le);o+=16;if(inc>65535||o+inc>buf.byteLength)break;pkts.push({data:buf.slice(o,o+inc),ts,linkType:lt});o+=inc;}return{packets:pkts,linkType:lt,isLE:le};}}
+function extAddr(buf){const v=new DataView(buf),r={ipv4Src:null,ipv4Dst:null,ipv6Src:null,ipv6Dst:null,macSrc:null,macDst:null};if(buf.byteLength<14)return r;r.macDst=[0,1,2,3,4,5].map(i=>v.getUint8(i).toString(16).padStart(2,'0').toUpperCase()).join(':');r.macSrc=[0,1,2,3,4,5].map(i=>v.getUint8(6+i).toString(16).padStart(2,'0').toUpperCase()).join(':');const et=v.getUint16(12);let ip=14;if(et===0x8100)ip=18;if((et===0x0800||et===0x8100)&&buf.byteLength>=ip+20){r.ipv4Src=`${v.getUint8(ip+12)}.${v.getUint8(ip+13)}.${v.getUint8(ip+14)}.${v.getUint8(ip+15)}`;r.ipv4Dst=`${v.getUint8(ip+16)}.${v.getUint8(ip+17)}.${v.getUint8(ip+18)}.${v.getUint8(ip+19)}`;}if(et===0x86DD&&buf.byteLength>=ip+40){r.ipv6Src=f6(buf,ip+8);r.ipv6Dst=f6(buf,ip+24);}return r;}
+function f6(buf,off){const v=new DataView(buf);return[0,2,4,6,8,10,12,14].map(i=>v.getUint16(off+i).toString(16)).join(':');}
+function modPkt(buf,lt,ops,key){const out=buf.slice(0);const v=new DataView(out);if(out.byteLength<14)return out;const et=v.getUint16(12);let ip=14;if(et===0x8100)ip=18;if(ops.has('4')){for(let i=0;i<12;i++)v.setUint8(i,0);}else if(ops.has('3')){const sm=[0,1,2,3,4,5].map(i=>v.getUint8(6+i).toString(16).padStart(2,'0').toUpperCase()).join(':');const dm=[0,1,2,3,4,5].map(i=>v.getUint8(i).toString(16).padStart(2,'0').toUpperCase()).join(':');if(!FMAC.has(sm.toLowerCase()))xorMAC(sm,key).split(':').forEach((h,i)=>v.setUint8(6+i,parseInt(h,16)));if(!FMAC.has(dm.toLowerCase()))xorMAC(dm,key).split(':').forEach((h,i)=>v.setUint8(i,parseInt(h,16)));}if((et===0x0800||et===0x8100)&&out.byteLength>=ip+20&&ops.has('1')){const src=`${v.getUint8(ip+12)}.${v.getUint8(ip+13)}.${v.getUint8(ip+14)}.${v.getUint8(ip+15)}`;const dst=`${v.getUint8(ip+16)}.${v.getUint8(ip+17)}.${v.getUint8(ip+18)}.${v.getUint8(ip+19)}`;if(!FIP.has(src))xorIPv4(src,key).split('.').forEach((n,i)=>v.setUint8(ip+12+i,+n));if(!FIP.has(dst))xorIPv4(dst,key).split('.').forEach((n,i)=>v.setUint8(ip+16+i,+n));if(ops.has('5')){const proto=v.getUint8(ip+9);if(proto===6){const ihl=(v.getUint8(ip)&0xf)*4,to=ip+ihl;if(out.byteLength>to+4){const sp=v.getUint16(to),dp=v.getUint16(to+2);if(sp===80||dp===80){const doff=to+((v.getUint8(to+12)>>4)*4);for(let i=doff;i<out.byteLength;i++)v.setUint8(i,0);}}}}v.setUint16(ip+10,0);}if(et===0x86DD&&out.byteLength>=ip+40&&ops.has('2')){const s6=f6(out,ip+8),d6=f6(out,ip+24);if(!FIP6.has(s6))wIP6(v,ip+8,xorIPv6(s6,key));if(!FIP6.has(d6))wIP6(v,ip+24,xorIPv6(d6,key));}return out;}
+function wIP6(v,off,s){try{s.split(':').map(g=>parseInt(g,16)||0).forEach((g,i)=>v.setUint16(off+i*2,g));}catch(e){}}
+function buildPcap(info,pkts){let tot=24;pkts.forEach(p=>tot+=16+p.byteLength);const out=new ArrayBuffer(tot);const v=new DataView(out);v.setUint32(0,0xa1b2c3d4,true);v.setUint16(4,2,true);v.setUint16(6,4,true);v.setInt32(8,0,true);v.setUint32(12,0,true);v.setUint32(16,65535,true);v.setUint32(20,info.linkType||1,true);let off=24;const now=Math.floor(Date.now()/1000);pkts.forEach((p,i)=>{const ts=info.packets[i]?.ts||now,sec=Math.floor(ts),usec=Math.round((ts-sec)*1e6);v.setUint32(off,sec,true);v.setUint32(off+4,usec,true);v.setUint32(off+8,p.byteLength,true);v.setUint32(off+12,p.byteLength,true);off+=16;new Uint8Array(out).set(new Uint8Array(p),off);off+=p.byteLength;});return out;}
+
+// RUN
+async function runAnonymization(){
+  if(!S.files.length){toast('Carga al menos un archivo PCAP');return;}
+  if(S.key.length!==32){toast('La clave debe tener exactamente 32 bits');return;}
+  if(!S.ops.size){toast('Selecciona al menos una operacion');return;}
+  document.getElementById('run-btn').disabled=true;
+  document.getElementById('modal-ov').classList.add('open');
+  await tick();
+  const seenIP=new Map(),seenMAC=new Map(),pairs=[],seenPairs=new Set(),procFiles=[];
+  let totalPkts=0,excl=0;
+  function resolveIP(ip){if(!ip)return{orig:null,anon:null,ex:false};if(seenIP.has(ip))return seenIP.get(ip);const f=FIP.has(ip);const anon=(!S.ops.has('1')||f)?ip:xorIPv4(ip,S.key);const o={orig:ip,anon,ex:f};seenIP.set(ip,o);if(f)excl++;return o;}
+  function resolveMAC(mac){if(!mac)return{orig:null,anon:null,ex:false,del:false};if(seenMAC.has(mac))return seenMAC.get(mac);const doM=S.ops.has('3')||S.ops.has('4');if(!doM){const o={orig:mac,anon:mac,ex:false,del:false};seenMAC.set(mac,o);return o;}const f=FMAC.has(mac.toLowerCase());const del=S.ops.has('4');const anon=del?'00:00:00:00:00:00':f?mac:xorMAC(mac,S.key);const o={orig:mac,anon,ex:f,del};seenMAC.set(mac,o);if(f)excl++;return o;}
+  for(let fi=0;fi<S.files.length;fi++){
+    const file=S.files[fi];
+    setProg(Math.round(fi/S.files.length*85),file.name,`Archivo ${fi+1}/${S.files.length}`);
+    await tick();
+    const parsed=parsePcap(file.buffer);const modPkts=[];
+    for(let pi=0;pi<parsed.packets.length;pi++){
+      if(pi%300===0){setProg(Math.round((fi/S.files.length+pi/parsed.packets.length/S.files.length)*85),`Paquete ${pi}/${parsed.packets.length}`,'');await tick();}
+      const pkt=parsed.packets[pi];const lt=pkt.linkType||parsed.linkType||1;const addr=extAddr(pkt.data);
+      [[addr.ipv4Src,addr.macSrc],[addr.ipv4Dst,addr.macDst]].forEach(([rawIP,rawMAC])=>{
+        const ipR=resolveIP(rawIP),macR=resolveMAC(rawMAC);
+        const pk=(ipR.orig||'none')+'|'+(macR.orig||'none');
+        if(!seenPairs.has(pk)){seenPairs.add(pk);pairs.push({ipOrig:ipR.orig,ipAnon:ipR.anon,ipEx:ipR.ex,macOrig:macR.orig,macAnon:macR.anon,macEx:macR.ex,macDel:macR.del});}
+      });
+      modPkts.push(modPkt(pkt.data,lt,S.ops,S.key));totalPkts++;
+    }
+    procFiles.push({name:'anon_'+file.name,buffer:buildPcap(parsed,modPkts),originalName:file.name});
+  }
+  setProg(100,'Completado','');await tick();
+  S.results={pairs,procFiles,totalPkts,excl,key:S.key,ops:[...S.ops],ts:new Date().toLocaleString('es-ES')};
+  document.getElementById('modal-ov').classList.remove('open');
+  document.getElementById('run-btn').disabled=false;
+  renderResults();
+  toast('Completado — '+mapping.length+' direcciones mapeadas');
+  showTab('preview');
+}
+
+// RENDER
+function renderResults(){
+  const r=S.results;
+  document.getElementById('kpi-grid').innerHTML=[
+    {l:'Paquetes',v:r.totalPkts.toLocaleString(),s:'procesados',k:'ks-neutral'},
+    {l:'Direcciones',v:r.pairs.length,s:'pares IP/MAC',k:'ks-ok'},
+    {l:'Excluidas',v:r.excl,s:'known-plaintext',k:'ks-warn'},
+    {l:'Archivos',v:r.procFiles.length,s:'listos',k:'ks-ok'},
+  ].map(x=>`<div class="kpi-card"><div class="kpi-lbl">${x.l}</div><div class="kpi-val">${x.v}</div><div class="kpi-sub">${x.s}</div><div class="kpi-stripe ${x.k}"></div></div>`).join('');
+
+  const om={'1':'Anonimizar IPv4','2':'Anonimizar IPv6','3':'Anonimizar MAC','4':'Borrar MAC','5':'Borrar HTTP payload'};
+  const row=(l,v,vc)=>`<tr><td style="font-size:11px;font-weight:300;color:var(--textdim);padding:10px 16px;border-bottom:1px solid var(--border);width:120px">${l}</td><td style="font-size:12px;font-weight:300;padding:10px 16px;border-bottom:1px solid var(--border);${vc?'color:'+vc:''}">${v}</td></tr>`;
+  document.getElementById('rep-config').innerHTML=
+    row('Clave XOR',`<span style="font-family:monospace;font-size:11px">${r.key.slice(0,16)}&hellip;${r.key.slice(16)}</span>`,'')+
+    row('Operaciones',r.ops.map(o=>om[o]).join(', '),'')+
+    row('Fecha',r.ts,'');
+  document.getElementById('rep-stats').innerHTML=
+    row('Paquetes',r.totalPkts.toLocaleString(),'')+
+    row('Pares IP/MAC',r.pairs.length,'')+
+    row('Excluidas',r.excl,'var(--warn)')+
+    row('Archivos',r.procFiles.length,'var(--ok)');
+
+  document.getElementById('exp-grid').innerHTML=[
+    ...r.procFiles.map(f=>`<div class="card"><div class="card-hdr"><span class="card-title">PCAP anonimizado</span></div><div class="card-body"><div style="font-size:12px;font-weight:400;margin-bottom:3px">${f.name}</div><div style="font-size:11px;font-weight:300;color:var(--textdim);margin-bottom:12px">${fmtSz(f.buffer.byteLength)}</div><button class="btn-accent btn-sm" onclick="dlPcap('${f.name}')">Descargar PCAP</button></div></div>`),
+    `<div class="card"><div class="card-hdr"><span class="card-title">CSV</span></div><div class="card-body"><div style="font-size:11px;font-weight:300;color:var(--textdim);margin-bottom:12px">Metadatos de cifrado + tabla de pares IP/MAC</div><button class="btn-ghost btn-sm" onclick="dlCSV()">Descargar CSV</button></div></div>`,
+    `<div class="card"><div class="card-hdr"><span class="card-title">JSON</span></div><div class="card-body"><div style="font-size:11px;font-weight:300;color:var(--textdim);margin-bottom:12px">Informe completo con mapeo</div><button class="btn-ghost btn-sm" onclick="dlJSON()">Descargar JSON</button></div></div>`,
+  ].join('');
+
+  ['prev','rep','exp'].forEach(id=>{
+    document.getElementById(id+'-empty').style.display='none';
+    document.getElementById(id+'-content').style.display='block';
+  });
+  document.querySelector('#prev-content .data-table thead tr').innerHTML=
+    '<th>IP Original</th><th>MAC Original</th><th>IP Anonimizada</th><th>MAC Anonimizada</th><th>Estado</th>';
+  renderMapTable('all');
+}
+
+function renderMapTable(filter){
+  const r=S.results;if(!r)return;
+  let items=r.pairs;
+  if(filter==='excluded') items=items.filter(p=>p.ipEx||p.macEx);
+  else if(filter==='IPv4') items=items.filter(p=>p.ipOrig);
+  else if(filter==='MAC')  items=items.filter(p=>p.macOrig);
+  document.getElementById('prev-count').textContent=items.length+' pares';
+  document.getElementById('prev-sub').textContent=r.pairs.length+' pares IP/MAC unicos — '+r.procFiles.length+' archivo(s)';
+  function ipC(o,a,x){if(!o)return'<span style="color:var(--textdim);font-style:italic">—</span>';if(x)return`<span class="td-excl">${o}</span>`;return`<span class="td-mono">${o}</span>`;}
+  function ipA(o,a,x){if(!o)return'<span style="color:var(--textdim);font-style:italic">—</span>';if(x)return`<span class="td-excl">${a}</span>`;return`<span class="td-anon">${a}</span>`;}
+  function macC(o,x){if(!o)return'<span style="color:var(--textdim);font-style:italic">—</span>';if(x)return`<span class="td-excl">${o}</span>`;return`<span class="td-mono">${o}</span>`;}
+  function macA(o,a,x,d){if(!o)return'<span style="color:var(--textdim);font-style:italic">—</span>';if(d)return`<span class="td-del">${a}</span>`;if(x)return`<span class="td-excl">${a}</span>`;return`<span class="td-anon">${a}</span>`;}
+  function st(p){const b=[];if(p.ipEx)b.push('<span class="badge badge-warn" style="font-size:8px">IP excluida</span>');if(p.macEx)b.push('<span class="badge badge-warn" style="font-size:8px">MAC excluida</span>');if(p.macDel)b.push('<span class="badge badge-danger" style="font-size:8px">MAC borrada</span>');if(!b.length)b.push('<span class="badge badge-ok" style="font-size:8px">Cifrado</span>');return b.join(' ');}
+  document.getElementById('map-tbody').innerHTML=items.map(p=>`<tr>
+    <td>${ipC(p.ipOrig,p.ipAnon,p.ipEx)}</td>
+    <td>${macC(p.macOrig,p.macEx)}</td>
+    <td>${ipA(p.ipOrig,p.ipAnon,p.ipEx)}</td>
+    <td>${macA(p.macOrig,p.macAnon,p.macEx,p.macDel)}</td>
+    <td>${st(p)}</td>
+  </tr>`).join('');
+}
+
+// FILES
+function addFiles(fl){Array.from(fl).forEach(f=>{if(S.files.find(x=>x.name===f.name))return;const r=new FileReader();r.onload=e=>{S.files.push({name:f.name,size:f.size,buffer:e.target.result});renderFiles();};r.readAsArrayBuffer(f);});}
+function removeFile(n){S.files=S.files.filter(f=>f.name!==n);renderFiles();}
+function renderFiles(){document.getElementById('file-list').innerHTML=S.files.map(f=>`<div class="file-row"><div class="fr-name" title="${f.name}">${f.name}</div><div class="fr-size">${fmtSz(f.size)}</div><button class="fr-remove" onclick="removeFile('${f.name}')">&times;</button></div>`).join('');}
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');addFiles(e.dataTransfer.files)});
+
+// KEY
+function genKey(){const k=Array.from({length:32},()=>Math.round(Math.random())).join('');document.getElementById('key-input').value=k;S.key=k;renderKeyVis(k);document.getElementById('key-hint').innerHTML='<span style="color:var(--ok)">Clave valida — 32 bits</span>';document.getElementById('key-input').className='form-input valid';}
+function onKeyInput(){const val=document.getElementById('key-input').value.replace(/[^01]/g,'');document.getElementById('key-input').value=val;S.key=val;const ok=val.length===32;document.getElementById('key-input').className='form-input'+(val.length===0?'':ok?' valid':' invalid');document.getElementById('key-hint').innerHTML=ok?'<span style="color:var(--ok)">Clave valida — 32 bits</span>':`32 bits requeridos — ${val.length} introducidos`;renderKeyVis(val);}
+function renderKeyVis(k){document.getElementById('key-vis').innerHTML=k.padEnd(32,'_').split('').map(b=>`<div class="kv-bit ${b==='1'?'kv-1':b==='0'?'kv-0':'kv-empty'}">${b==='_'?'':b}</div>`).join('');}
+
+// OPS / TABS / FILTERS
+function toggleOp(id){if(S.ops.has(id))S.ops.delete(id);else S.ops.add(id);document.getElementById('op-'+id).classList.toggle('active',S.ops.has(id));document.getElementById('opck-'+id).innerHTML=S.ops.has(id)?'&#10003;':'';}
+function showTab(t){['welcome','preview','report','export'].forEach(x=>{document.getElementById('tab-'+x).classList.toggle('active',x===t);document.getElementById('pane-'+x).style.display=x===t?'block':'none';});}
+function setFilter(type,btn){document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderMapTable(type);}
+
+// DOWNLOAD
+function dlPcap(n){const f=S.results.procFiles.find(x=>x.name===n);if(!f)return;dl(new Blob([f.buffer],{type:'application/octet-stream'}),f.name);toast('Descargando '+f.name);}
+function dlCSV(){
+  const r=S.results;
+  const om={'1':'Anonimizar IPv4','2':'Anonimizar IPv6','3':'Anonimizar MAC','4':'Borrar MAC','5':'Borrar HTTP payload'};
+  const meta=[
+    '# PCAP Anonymizer — Informe de cifrado',
+    `# Fecha,${r.ts}`,
+    `# Clave XOR,${r.key}`,
+    `# Operaciones aplicadas,${r.ops.map(o=>om[o]).join(' | ')}`,
+    `# Archivos procesados,${r.procFiles.map(f=>f.originalName).join(' | ')}`,
+    `# Total paquetes,${r.totalPkts}`,
+    `# Pares IP/MAC unicos,${r.pairs.length}`,
+    `# Direcciones excluidas (known-plaintext),${r.excl}`,
+    '#',
+    'IP Original,MAC Original,IP Anonimizada,MAC Anonimizada,Estado IP,Estado MAC',
+    ...r.pairs.map(p=>`${p.ipOrig||'none'},${p.macOrig||'none'},${p.ipAnon||'none'},${p.macAnon||'none'},${p.ipEx?'excluida':'xor'},${p.macDel?'borrada':p.macEx?'excluida':'xor'}`)
+  ];
+  dl(new Blob([meta.join('\n')],{type:'text/csv'}),'pcap_anon_report.csv');toast('Descargando CSV');
+}
+function dlJSON(){const r=S.results;dl(new Blob([JSON.stringify({metadata:{fecha:r.ts,claveXOR:r.key,operaciones:r.ops,archivos:r.procFiles.map(f=>f.originalName),totalPaquetes:r.totalPkts,paresUnicos:r.pairs.length,excluidas:r.excl},pares:r.pairs},null,2)],{type:'application/json'}),'pcap_anon_report.json');toast('Descargando JSON');}
+function dl(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),2000);}
+
+// UTILS
+function clearAll(){S.files=[];S.results=null;S.key='';document.getElementById('file-input').value='';document.getElementById('key-input').value='';document.getElementById('key-input').className='form-input';document.getElementById('key-vis').innerHTML='';document.getElementById('key-hint').textContent='32 bits requeridos — 0 introducidos';renderFiles();['prev','rep','exp'].forEach(id=>{const ec=document.getElementById(id+'-content'),ee=document.getElementById(id+'-empty');if(ec)ec.style.display='none';if(ee)ee.style.display='block';});showTab('welcome');}
+function setProg(pct,msg,sub){document.getElementById('mod-fill').style.width=pct+'%';if(pct===100)document.getElementById('mod-fill').classList.add('ok');document.getElementById('mod-msg').textContent=msg;document.getElementById('mod-sub').textContent=sub;}
+function fmtSz(b){return b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(2)+' MB';}
+function tick(){return new Promise(r=>setTimeout(r,10));}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),3000);}
+</script>
+</body>
+</html>

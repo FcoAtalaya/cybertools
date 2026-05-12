@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberTools · Security Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf9;--s0:#ffffff;--s1:#fafaf9;--s2:#f4f3f1;--s3:#eeede9;
+  --border:#e5e3de;--border2:#d6d3cc;
+  --danger:#b91c1c;--warn:#c2600e;--ok:#166534;
+  --text:#1a1916;--textmed:#6b6860;--textdim:#9c9a96;--r:3px;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;font-weight:300}
+a{color:inherit;text-decoration:none}
+code{font-family:'Courier New',monospace;font-size:11px;background:var(--s2);padding:1px 5px;border-radius:2px;color:var(--textmed)}
+
+/* TOPBAR */
+.topbar{height:56px;padding:0 48px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--s0);position:sticky;top:0;z-index:10}
+.topbar-brand{font-family:'Instrument Serif',serif;font-size:18px;letter-spacing:-.3px;display:flex;align-items:center;gap:10px}
+.topbar-brand em{font-style:normal;color:var(--textdim);font-size:14px}
+.topbar-links{display:flex;gap:24px;align-items:center}
+.topbar-links a{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.5px;color:var(--textmed);transition:color .15s}
+.topbar-links a:hover{color:var(--text)}
+.topbar-gh{display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid var(--border2);border-radius:var(--r);font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.4px;color:var(--textmed);transition:all .15s}
+.topbar-gh:hover{background:var(--s2);border-color:var(--text);color:var(--text)}
+.gh-icon{width:14px;height:14px;fill:currentColor}
+
+/* HERO */
+.hero{padding:80px 48px 72px;border-bottom:1px solid var(--border)}
+.hero-eyebrow{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--textdim);margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.hero-eyebrow::after{content:'';flex:1;height:1px;background:var(--border);max-width:120px}
+.hero-title{font-family:'Instrument Serif',serif;font-size:58px;font-weight:400;letter-spacing:-.8px;line-height:1.05;margin-bottom:24px;max-width:680px}
+.hero-title em{font-style:italic;color:var(--textdim)}
+.hero-desc{font-size:14px;font-weight:300;color:var(--textmed);max-width:520px;line-height:1.75;margin-bottom:40px}
+.hero-cta{display:flex;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 20px;font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.4px;border-radius:var(--r);cursor:pointer;transition:all .15s;border:1px solid transparent;font-family:'Inter',sans-serif}
+.btn-accent{background:var(--text);color:#fff;border-color:var(--text)}
+.btn-accent:hover{background:#2d2b27}
+.btn-ghost{background:transparent;color:var(--textmed);border-color:var(--border2)}
+.btn-ghost:hover{background:var(--s2);border-color:var(--text);color:var(--text)}
+
+/* SECTION */
+.section{padding:64px 48px}
+.section-label{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--textdim);margin-bottom:32px;display:flex;align-items:center;gap:12px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* TOOLS */
+.tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.tool-card{background:var(--s0);padding:32px 28px;border-right:1px solid var(--border);position:relative;transition:background .2s}
+.tool-card:last-child{border-right:none}
+.tool-card:hover{background:var(--s1)}
+.tool-num{font-family:'Instrument Serif',serif;font-size:56px;font-weight:400;line-height:1;color:var(--border2);margin-bottom:20px;user-select:none}
+.tool-cat{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.9px;color:var(--textdim);margin-bottom:8px}
+.tool-title{font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;letter-spacing:-.2px;margin-bottom:4px}
+.tool-subtitle{font-size:11px;font-weight:300;color:var(--textdim);margin-bottom:16px}
+.tool-desc{font-size:12px;font-weight:300;color:var(--textmed);line-height:1.7;margin-bottom:24px}
+.tool-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:24px}
+.tag{font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;padding:3px 8px;border:1px solid var(--border2);border-radius:var(--r);color:var(--textmed);background:var(--s1)}
+.tool-action{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.4px;color:var(--textmed);padding:7px 14px;border:1px solid var(--border2);border-radius:var(--r);transition:all .15s}
+.tool-action:hover{background:var(--s2);border-color:var(--text);color:var(--text)}
+.tool-stripe{position:absolute;bottom:0;left:0;right:0;height:2px}
+.stripe-1{background:var(--danger)}
+.stripe-2{background:var(--warn)}
+.stripe-3{background:var(--ok)}
+
+
+
+/* FOOTER */
+.footer{padding:32px 48px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.footer-brand{font-family:'Instrument Serif',serif;font-size:16px;color:var(--textmed)}
+.footer-links{display:flex;gap:20px}
+.footer-links a{font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.4px;color:var(--textdim);transition:color .15s}
+.footer-links a:hover{color:var(--text)}
+.footer-meta{font-size:10px;font-weight:300;color:var(--textdim)}
+
+@media(max-width:820px){
+  .topbar{padding:0 24px}
+  .hero{padding:48px 24px 56px}
+  .hero-title{font-size:38px}
+  .section{padding:40px 24px}
+  .tools-grid{grid-template-columns:1fr}
+  .tool-card{border-right:none;border-bottom:1px solid var(--border)}
+  .tool-card:last-child{border-bottom:none}
+  .footer{flex-direction:column;align-items:flex-start;gap:16px;padding:24px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<nav class="topbar">
+  <div class="topbar-brand">
+    CyberTools
+    <em>· OT Security Suite</em>
+  </div>
+  <div class="topbar-links">
+    <a href="#tools">Tools</a>
+    <a href="https://github.com/FcoAtalaya/cybertools" class="topbar-gh">
+      <svg class="gh-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">OT/ICS Cybersecurity · Open source</div>
+  <h1 class="hero-title">Three tools.<br><em>One workflow.</em></h1>
+  <p class="hero-desc">Analysis suite for industrial networks and OT/ICS environments. Built for analysts who need traffic visibility, secure anonymization, and risk management in one ecosystem.</p>
+  <div class="hero-cta">
+    <a href="https://github.com/FcoAtalaya/cybertools" class="btn btn-accent">View on GitHub</a>
+    <a href="#tools" class="btn btn-ghost">Explore tools</a>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="section" id="tools">
+  <div class="section-label">Tools</div>
+  <div class="tools-grid">
+
+    <div class="tool-card">
+      <div class="tool-num">01</div>
+      <div class="tool-cat">Traffic analysis</div>
+      <div class="tool-title">OT Traffic Analyzer</div>
+      <div class="tool-subtitle">PCAP capture analysis for industrial environments</div>
+      <p class="tool-desc">Load PCAP files and get immediate visibility into OT traffic: industrial protocol detection, asset inventory, master-slave relationships, dangerous function codes, and associated CVEs. Dashboard with KPIs and Excel export.</p>
+      <div class="tool-tags">
+        <span class="tag">PCAP</span>
+        <span class="tag">Modbus</span>
+        <span class="tag">DNP3</span>
+        <span class="tag">S7Comm</span>
+        <span class="tag">ENIP</span>
+        <span class="tag">CVE</span>
+        <span class="tag">Purdue</span>
+      </div>
+      <a href="ot-pcap-analyzer.html" class="tool-action">Open tool →</a>
+      <div class="tool-stripe stripe-1"></div>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-num">02</div>
+      <div class="tool-cat">Privacy & compliance</div>
+      <div class="tool-title">PCAP Anonymizer</div>
+      <div class="tool-subtitle">Anonymize captures to share them safely</div>
+      <p class="tool-desc">Remove or encrypt IPs, MACs, and sensitive payloads from PCAP files before sharing with third parties or external analysis teams. Configurable XOR encryption, vendor OUI preservation, and fully local browser-side processing.</p>
+      <div class="tool-tags">
+        <span class="tag">IPv4</span>
+        <span class="tag">IPv6</span>
+        <span class="tag">MAC</span>
+        <span class="tag">XOR</span>
+        <span class="tag">Payload</span>
+        <span class="tag">Local</span>
+      </div>
+      <a href="pcap_anonymizer.html" class="tool-action">Open tool →</a>
+      <div class="tool-stripe stripe-2"></div>
+    </div>
+
+    <div class="tool-card">
+      <div class="tool-num">03</div>
+      <div class="tool-cat">Risk management</div>
+      <div class="tool-title">Risk Assessment</div>
+      <div class="tool-subtitle">Risk evaluation and tracking for OT infrastructure</div>
+      <p class="tool-desc">Manage assets, threats, and security controls in industrial environments. Calculate risk scores, assign owners, track the status of each risk, and generate Excel-exportable reports with an executive dashboard view.</p>
+      <div class="tool-tags">
+        <span class="tag">Assets</span>
+        <span class="tag">Threats</span>
+        <span class="tag">Controls</span>
+        <span class="tag">Scoring</span>
+        <span class="tag">XLSX</span>
+        <span class="tag">Dashboard</span>
+      </div>
+      <a href="risk_assessment.html" class="tool-action">Open tool →</a>
+      <div class="tool-stripe stripe-3"></div>
+    </div>
+
+  </div>
+
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-brand">CyberTools · OT Security Suite</div>
+  <div class="footer-links">
+    <a href="ot-pcap-analyzer.html">OT Analyzer</a>
+    <a href="pcap_anonymizer.html">Anonymizer</a>
+    <a href="risk_assessment.html">Risk Assessment</a>
+    <a href="https://github.com/FcoAtalaya/cybertools">GitHub</a>
+  </div>
+  <div class="footer-meta">Open source</div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Risk Assessment · CyberTools</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+ --bg:#fafaf9;
+ --s0:#ffffff;
+ --s1:#fafaf9;
+ --s2:#f4f3f1;
+ --s3:#eeede9;
+ --border:#e5e3de;
+ --border2:#d6d3cc;
+ --danger:#b91c1c;
+ --warn:#c2600e;
+ --ok:#166534;
+ --accent:#1a1916;
+ --text:#1a1916;
+ --textdim:#9c9a96;
+ --textmed:#6b6860;
+ --mono:'Inter',sans-serif;
+ --sans:'Instrument Serif',serif;
+ --r:3px;
+}
+
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.5;font-weight:400}
+::selection{background:#1a191620}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--s2)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* TOPBAR */
+.topbar{
+ background:var(--s0);border-bottom:1px solid var(--border);
+ height:56px;display:flex;align-items:center;justify-content:space-between;
+ padding:0 32px;position:sticky;top:0;z-index:200;
+}
+.logo{font-family:var(--sans);font-size:19px;color:var(--text);display:flex;align-items:center;gap:12px;letter-spacing:-.2px}
+.logo-icon{width:26px;height:26px;background:var(--ink);border-radius:2px;display:grid;place-items:center;font-size:12px;filter:grayscale(1)}
+.logo small{font-family:var(--mono);font-size:10px;font-weight:300;color:var(--textdim);letter-spacing:.8px;text-transform:uppercase}
+.topbar-actions{display:flex;gap:8px;align-items:center}
+
+/* BUTTONS */
+.btn{
+ font-family:var(--mono);font-size:11px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;
+ padding:7px 16px;border-radius:var(--r);border:1px solid var(--border2);cursor:pointer;
+ transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+ background:transparent;color:var(--textmed);
+}
+.btn:hover{background:var(--s2);color:var(--text);border-color:var(--text)}
+.btn-ghost{background:transparent;color:var(--textmed);border-color:var(--border2)}
+.btn-ghost:hover{background:var(--s2);color:var(--text)}
+.btn-accent{background:var(--text);color:#fff;border-color:var(--text)}
+.btn-accent:hover{background:#333;border-color:#333}
+.btn-danger{background:transparent;color:var(--danger);border-color:var(--border2)}
+.btn-danger:hover{background:#fdf2f2;border-color:var(--danger)}
+.btn-warn{background:transparent;color:var(--warn);border-color:var(--border2)}
+.btn-sm{padding:5px 12px;font-size:10px}
+.btn-icon{padding:6px 8px}
+
+/* LAYOUT */
+.layout{display:flex;height:calc(100vh - 56px)}
+.sidebar{
+ width:200px;min-width:200px;background:var(--s0);
+ border-right:1px solid var(--border);
+ display:flex;flex-direction:column;padding:24px 0;
+}
+.nav-item{
+ display:flex;align-items:center;gap:10px;
+ padding:8px 24px;cursor:pointer;color:var(--textmed);
+ font-size:11px;font-weight:400;letter-spacing:.4px;text-transform:uppercase;
+ border-left:1px solid transparent;transition:all .1s;
+}
+.nav-item:hover{color:var(--text)}
+.nav-item.active{color:var(--text);border-left-color:var(--text);background:var(--s2)}
+.nav-icon{font-size:13px;width:16px;text-align:center;opacity:.5}
+.nav-badge{
+ margin-left:auto;font-size:9px;padding:2px 6px;
+ font-weight:500;letter-spacing:.3px;background:var(--s3);color:var(--textmed);border-radius:2px;
+}
+.nb-danger{background:#fee2e2;color:var(--danger)}
+.nb-warn{background:#ffedd5;color:var(--warn)}
+.nb-ok{background:#dcfce7;color:var(--ok)}
+.nav-sep{height:1px;background:var(--border);margin:16px 24px}
+.nav-label{padding:8px 24px 4px;font-size:9px;color:var(--textdim);letter-spacing:.9px;font-weight:500;text-transform:uppercase}
+
+.main{flex:1;overflow-y:auto;padding:40px 48px;display:flex;flex-direction:column;gap:32px;background:var(--bg)}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+.page-title{font-family:var(--sans);font-size:32px;font-weight:400;color:var(--text);line-height:1.1;letter-spacing:-.5px}
+.page-sub{color:var(--textdim);font-size:12px;margin-top:6px;font-weight:300;letter-spacing:.1px}
+.page-actions{display:flex;gap:8px;flex-shrink:0;align-items:flex-start;padding-top:8px}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border)}
+.tab{
+ padding:8px 18px;cursor:pointer;font-size:11px;letter-spacing:.4px;text-transform:uppercase;
+ font-weight:400;color:var(--textdim);transition:all .1s;border-bottom:1px solid transparent;margin-bottom:-1px;
+}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+.tab:hover:not(.active){color:var(--textmed)}
+
+/* CARDS */
+.card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.card-header{
+ padding:16px 20px;border-bottom:1px solid var(--border);
+ display:flex;align-items:center;justify-content:space-between;
+}
+.card-title{font-size:9px;font-weight:500;color:var(--textdim);letter-spacing:.9px;text-transform:uppercase}
+.card-body{padding:20px}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+
+/* KPI CARDS */
+.kpi{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:24px;position:relative}
+.kpi::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border)}
+.kpi-crit::after{background:#dc2626}
+.kpi-high::after{background:#ea580c}
+.kpi-ok::after{background:#16a34a}
+.kpi-info::after{background:var(--text)}
+.kpi-label{font-size:9px;color:var(--textdim);text-transform:uppercase;letter-spacing:.9px;margin-bottom:12px;font-weight:500}
+.kpi-value{font-family:var(--sans);font-size:48px;font-weight:400;line-height:1;color:var(--text)}
+.kpi-sub{font-size:11px;color:var(--textdim);margin-top:8px;font-weight:300}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{
+ font-size:9px;font-weight:500;text-transform:uppercase;letter-spacing:.8px;
+ color:var(--textdim);padding:10px 16px;border-bottom:1px solid var(--border);
+ text-align:left;white-space:nowrap;background:var(--s1);
+}
+td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text);font-size:12px;vertical-align:middle;font-weight:300}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--s2)}
+.td-mono{font-family:monospace;font-size:11px}
+
+/* BADGES */
+.rbadge{
+ display:inline-flex;align-items:center;
+ padding:2px 8px;border-radius:var(--r);font-size:9px;font-weight:500;
+ letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;border:1px solid;
+}
+.rb-crit{color:var(--danger);border-color:#fca5a5;background:#fef2f2}
+.rb-high{color:var(--warn);border-color:#fdba74;background:#fff7ed}
+.rb-med{color:#92400e;border-color:#fcd34d;background:#fffbeb}
+.rb-low{color:var(--ok);border-color:#86efac;background:#f0fdf4}
+.rb-info{color:var(--textmed);border-color:var(--border2);background:var(--s2)}
+.rb-ok{color:var(--ok);border-color:#86efac;background:#f0fdf4}
+.rb-partial{color:var(--warn);border-color:#fdba74;background:#fff7ed}
+.rb-none{color:var(--danger);border-color:#fca5a5;background:#fef2f2}
+
+/* FORM ELEMENTS */
+.form-row{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
+.form-label{font-size:9px;text-transform:uppercase;letter-spacing:.8px;color:var(--textdim);font-weight:500}
+input,select,textarea{
+ background:var(--s0);border:1px solid var(--border2);border-radius:var(--r);
+ color:var(--text);font-family:var(--mono);font-size:12px;font-weight:300;padding:9px 12px;
+ outline:none;transition:border-color .1s;width:100%;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--text)}
+select option{background:#fff}
+input[type=range]{padding:0;background:transparent;cursor:pointer;height:18px}
+textarea{resize:vertical;min-height:60px}
+.input-group{display:flex}
+.input-group input{border-radius:var(--r) 0 0 var(--r)}
+.input-group .btn{border-radius:0 var(--r) var(--r) 0;border-left:none}
+
+/* RISK MATRIX */
+.matrix{display:grid;grid-template-columns:32px repeat(5,1fr);gap:2px}
+.m-cell{
+ aspect-ratio:1.2;border-radius:var(--r);display:flex;align-items:center;justify-content:center;
+ font-size:11px;font-weight:400;cursor:default;transition:opacity .1s;position:relative;
+ flex-direction:column;gap:2px;min-height:48px;border:1px solid transparent;
+}
+.m-cell:hover{opacity:.8;z-index:2}
+.m-axis-label{display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--textdim);font-weight:400}
+.m-risk-dot{
+ position:absolute;width:16px;height:16px;border-radius:50%;
+ background:var(--text);display:flex;align-items:center;justify-content:center;
+ font-size:8px;font-weight:500;color:#fff;cursor:pointer;
+ box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .1s;z-index:3;
+}
+.m-risk-dot:hover{transform:scale(1.3)}
+.mc-1{background:#dcfce7;color:var(--ok);border-color:#c0d8cc}
+.mc-2{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+.mc-3{background:#fefce8;color:#854d0e;border-color:#fde047}
+.mc-4{background:#ffedd5;color:var(--warn);border-color:#e8d0a8}
+.mc-5{background:#fee2e2;color:var(--danger);border-color:#e8c0bc}
+
+/* PROGRESS BAR */
+.pbar-wrap{display:flex;align-items:center;gap:8px}
+.pbar{flex:1;height:4px;background:var(--s3);border-radius:0;overflow:hidden}
+.pbar-fill{height:100%;transition:width .4s}
+.pf-ok{background:#16a34a}
+.pf-warn{background:#ea580c}
+.pf-danger{background:#dc2626}
+.pf-accent{background:var(--text)}
+
+/* MODAL */
+.overlay{
+ position:fixed;inset:0;background:rgba(26,25,22,.5);z-index:500;
+ display:none;align-items:center;justify-content:center;
+}
+.overlay.show{display:flex}
+.modal{
+ background:var(--s0);border:1px solid var(--border);border-radius:var(--r);
+ width:560px;max-width:95vw;max-height:88vh;overflow-y:auto;
+ box-shadow:0 8px 40px rgba(0,0,0,.12);
+}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:var(--sans);font-size:20px;font-weight:400;color:var(--text)}
+.modal-close{background:none;border:none;color:var(--textdim);font-size:18px;cursor:pointer;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--s2)}
+
+/* EMPTY STATE */
+.empty{
+ text-align:center;padding:48px 20px;color:var(--textdim);
+ display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.empty-icon{font-size:28px;opacity:.3;filter:grayscale(1)}
+.empty-text{font-size:13px;font-weight:300}
+.empty-sub{font-size:11px;opacity:.6}
+
+/* TOOLTIP */
+.tooltip{position:relative}
+.tooltip::after{
+ content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
+ background:var(--text);color:#fff;
+ font-size:10px;padding:4px 8px;border-radius:var(--r);white-space:nowrap;
+ opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;
+}
+.tooltip:hover::after{opacity:1}
+
+/* ALERT STRIP */
+.alert{
+ display:flex;align-items:flex-start;gap:10px;padding:12px 16px;
+ border-left:2px solid;font-size:12px;font-weight:300;background:var(--s2);
+}
+.alert-warn{border-color:var(--warn);color:var(--warn);background:#fff7ed}
+.alert-danger{border-color:var(--danger);color:var(--danger);background:#fef2f2}
+.alert-ok{border-color:var(--ok);color:var(--ok);background:#f0fdf4}
+.alert-info{border-color:var(--border2);color:var(--textmed)}
+
+/* NARRATIVE */
+.narrative{
+ background:var(--s2);border-left:2px solid var(--border2);
+ padding:20px 24px;line-height:1.8;color:var(--textmed);font-size:13px;font-weight:300;
+}
+.narrative strong{color:var(--text);font-weight:500}
+.narrative .n-section{margin-bottom:16px}
+.narrative .n-title{color:var(--text);font-weight:500;font-size:9px;text-transform:uppercase;letter-spacing:.9px;margin-bottom:8px}
+
+/* HEAT BAR */
+.heat-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.heat-label{width:140px;font-size:11px;color:var(--textmed);text-overflow:ellipsis;overflow:hidden;white-space:nowrap;font-weight:300}
+.heat-bar{flex:1;height:4px;background:var(--s3);overflow:hidden}
+.heat-fill{height:100%}
+
+/* INLINE EDIT */
+.inline-edit{display:none}
+.editing .inline-edit{display:inline}
+.editing .inline-view{display:none}
+
+/* MITRE TAG */
+.mitre-tag{
+ font-size:10px;padding:1px 6px;font-family:monospace;
+ background:var(--s3);color:var(--textmed);border:1px solid var(--border2);font-weight:400;
+}
+
+/* SCORE RING */
+.score-ring{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring .score-val{position:absolute;font-family:var(--sans);font-weight:400;font-size:20px;color:var(--text)}
+.score-ring .score-lbl{position:absolute;top:calc(50% + 14px);font-size:8px;color:var(--textdim);letter-spacing:.4px}
+
+/* IMPORT ZONE */
+.drop-zone{
+ border:1px dashed var(--border2);padding:40px;
+ text-align:center;cursor:pointer;transition:all .15s;color:var(--textdim);
+ background:var(--s2);
+}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--text);background:var(--s3);color:var(--text)}
+.drop-zone-icon{font-size:24px;margin-bottom:8px;opacity:.4;filter:grayscale(1)}
+
+/* SECTIONS */
+.section{display:none}
+.section.active{display:flex;flex-direction:column;gap:24px}
+
+/* SCROLLABLE TABLE */
+.tbl-scroll{max-height:440px;overflow-y:auto}
+
+/* FILTERS BAR */
+.filters-bar{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.filter-chip{
+ padding:5px 12px;font-size:10px;font-weight:400;letter-spacing:.4px;text-transform:uppercase;
+ border:1px solid var(--border2);background:transparent;cursor:pointer;
+ color:var(--textmed);transition:all .1s;border-radius:var(--r);
+}
+.filter-chip:hover,.filter-chip.active{border-color:var(--text);color:var(--text);background:var(--s2)}
+.filter-chip.fc-crit.active{border-color:var(--danger);color:var(--danger);background:#fdf2f2}
+.filter-chip.fc-high.active{border-color:var(--warn);color:var(--warn);background:#fdf8f0}
+
+/* THREAT CHECKLIST */
+.threat-check-item{
+ display:flex;align-items:center;gap:8px;padding:6px 8px;
+ cursor:pointer;transition:background .1s;font-size:11px;font-weight:300;border-bottom:1px solid var(--border);
+}
+.threat-check-item:last-child{border-bottom:none}
+.threat-check-item:hover{background:var(--s2)}
+.threat-check-item input[type=checkbox]{
+ width:13px;height:13px;cursor:pointer;accent-color:var(--text);
+ flex-shrink:0;padding:0;border:none;background:transparent;
+}
+.threat-check-item.checked{background:var(--s2)}
+.tci-id{font-family:monospace;font-size:9px;color:var(--textdim);background:var(--s3);
+ padding:1px 5px;flex-shrink:0}
+.tci-name{flex:1;color:var(--text)}
+.tci-cat{font-size:9px;color:var(--textdim);flex-shrink:0}
+
+@media(max-width:900px){
+ .grid4{grid-template-columns:repeat(2,1fr)}
+ .grid3{grid-template-columns:1fr 1fr}
+ .sidebar{width:48px;min-width:48px;padding:16px 0}
+ .nav-item span,.nav-item .nav-badge{display:none}
+ .nav-label{display:none}
+ .nav-sep{margin:6px 8px}
+ .main{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+ <div class="logo">
+ <div class="logo-icon"></div>
+ RiskLens
+ <small>OT / IT RISK ASSESSMENT</small>
+ </div>
+ <div class="topbar-actions">
+ <button class="btn btn-ghost btn-sm" onclick="importSample()"> Load example</button>
+ <button class="btn btn-ghost btn-sm" onclick="showImportModal()">Import</button>
+ <button class="btn btn-ghost btn-sm" onclick="exportSession()">Save session</button>
+ <button class="btn btn-accent btn-sm" onclick="exportExcel()">Export Excel</button>
+ </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+ <!-- SIDEBAR -->
+ <nav class="sidebar">
+ <div class="nav-label">Analysis</div>
+ <div class="nav-item active" data-nav="dashboard" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Dashboard</span>
+ </div>
+ <div class="nav-item" data-nav="assets" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Assets</span>
+ <span class="nav-badge nb-ok" id="nb-assets">0</span>
+ </div>
+ <div class="nav-item" data-nav="threats" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Threats</span>
+ <span class="nav-badge nb-warn" id="nb-threats">0</span>
+ </div>
+ <div class="nav-item" data-nav="controls" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Controls</span>
+ <span class="nav-badge nb-ok" id="nb-controls">0</span>
+ </div>
+ <div class="nav-sep"></div>
+ <div class="nav-label">Results</div>
+ <div class="nav-item" data-nav="risks" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Risks</span>
+ <span class="nav-badge nb-danger" id="nb-risks">0</span>
+ </div>
+ <div class="nav-item" data-nav="matrix" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Matrix</span>
+ </div>
+ <div class="nav-item" data-nav="report" onclick="nav(this)">
+ <span class="nav-icon"></span><span>Report</span>
+ </div>
+ </nav>
+
+ <!-- MAIN -->
+ <main class="main">
+
+ <!-- DASHBOARD -->
+ <div class="section active" id="s-dashboard">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Risk Dashboard</div>
+ <div class="page-sub">Executive view of the current risk posture</div>
+ </div>
+ <div class="page-actions">
+ <button class="btn btn-ghost btn-sm" onclick="recalcAll()"> Recalculate</button>
+ </div>
+ </div>
+
+ <!-- KPIs -->
+ <div class="grid4" id="kpi-grid">
+ <div class="kpi kpi-crit">
+ <div class="kpi-label">Critical Risks</div>
+ <div class="kpi-value" id="kpi-crit">0</div>
+ <div class="kpi-sub">Require immediate action</div>
+ </div>
+ <div class="kpi kpi-high">
+ <div class="kpi-label">High Risks</div>
+ <div class="kpi-value" id="kpi-high">0</div>
+ <div class="kpi-sub">High priority</div>
+ </div>
+ <div class="kpi kpi-ok">
+ <div class="kpi-label">Active Controls</div>
+ <div class="kpi-value" id="kpi-ctrl">0</div>
+ <div class="kpi-sub">Of <span id="kpi-ctrl-total">0</span> defined</div>
+ </div>
+ <div class="kpi kpi-info">
+ <div class="kpi-label">Global Score</div>
+ <div class="kpi-value" id="kpi-score" style="color:var(--text)">—</div>
+ <div class="kpi-sub">Exposure index 0-100</div>
+ </div>
+ </div>
+
+ <div class="grid2">
+ <!-- Top risks -->
+ <div class="card">
+ <div class="card-header">
+ <div class="card-title"> Top Critical Risks</div>
+ </div>
+ <div class="card-body" id="top-risks-list">
+ <div class="empty"><div class="empty-icon"></div><div class="empty-text">No risks calculated</div><div class="empty-sub">Add assets and threats</div></div>
+ </div>
+ </div>
+
+ <!-- Risk distribution -->
+ <div class="card">
+ <div class="card-header">
+ <div class="card-title"> Risk Distribution</div>
+ </div>
+ <div class="card-body">
+ <div id="dist-chart" style="display:flex;flex-direction:column;gap:8px"></div>
+ </div>
+ </div>
+ </div>
+
+ <div class="grid2">
+ <!-- Most exposed assets -->
+ <div class="card">
+ <div class="card-header">
+ <div class="card-title"> Most Exposed Assets</div>
+ </div>
+ <div class="card-body" id="exposed-assets">
+ <div class="empty"><div class="empty-icon"></div><div class="empty-text">No assets</div></div>
+ </div>
+ </div>
+
+ <!-- Control coverage -->
+ <div class="card">
+ <div class="card-header">
+ <div class="card-title"> Control Coverage</div>
+ </div>
+ <div class="card-body" id="ctrl-coverage">
+ <div class="empty"><div class="empty-icon"></div><div class="empty-text">No controls</div></div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- ASSETS -->
+ <div class="section" id="s-assets">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Asset Inventory</div>
+ <div class="page-sub">Organization assets to be assessed</div>
+ </div>
+ <div class="page-actions">
+ <button class="btn btn-accent" onclick="showAssetModal()">+ New Asset</button>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header">
+ <div class="filters-bar">
+ <span class="filter-chip active" data-ftype="all" onclick="filterAssets(this)">All</span>
+ <span class="filter-chip" data-ftype="PLC" onclick="filterAssets(this)">PLC</span>
+ <span class="filter-chip" data-ftype="HMI" onclick="filterAssets(this)">HMI</span>
+ <span class="filter-chip" data-ftype="RTU" onclick="filterAssets(this)">RTU</span>
+ <span class="filter-chip" data-ftype="Servidor" onclick="filterAssets(this)">Servidor</span>
+ <span class="filter-chip" data-ftype="Red" onclick="filterAssets(this)">Network</span>
+ <span class="filter-chip" data-ftype="Endpoint" onclick="filterAssets(this)">Endpoint</span>
+ </div>
+ </div>
+ <div class="tbl-wrap tbl-scroll">
+ <table>
+ <thead>
+ <tr>
+ <th>Asset</th><th>Type</th><th>Purdue Level</th>
+ <th>Criticality</th><th>IP / ID</th><th>Owner</th><th>Actions</th>
+ </tr>
+ </thead>
+ <tbody id="assets-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- THREATS -->
+ <div class="section" id="s-threats">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Threat Catalogue</div>
+ <div class="page-sub">Based on MITRE ATT&CK for ICS + IT threats</div>
+ </div>
+ <div class="page-actions">
+ <button class="btn btn-accent" onclick="showThreatModal()">+ New Threat</button>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header">
+ <div class="filters-bar">
+ <span class="filter-chip active" data-ftcat="all" onclick="filterThreats(this)">All</span>
+ <span class="filter-chip" data-ftcat="ICS/OT" onclick="filterThreats(this)">ICS/OT</span>
+ <span class="filter-chip" data-ftcat="Malware" onclick="filterThreats(this)">Malware</span>
+ <span class="filter-chip" data-ftcat="Acceso" onclick="filterThreats(this)">Acceso</span>
+ <span class="filter-chip" data-ftcat="Red" onclick="filterThreats(this)">Network</span>
+ <span class="filter-chip" data-ftcat="Interno" onclick="filterThreats(this)">Interno</span>
+ <span class="filter-chip" data-ftcat="Físico" onclick="filterThreats(this)">Physical</span>
+ </div>
+ </div>
+ <div class="tbl-wrap tbl-scroll">
+ <table>
+ <thead>
+ <tr>
+ <th>Threat</th><th>Category</th><th>MITRE ID</th>
+ <th>Probability</th><th>Integrity Impact</th><th>Availability Impact</th><th>Actions</th>
+ </tr>
+ </thead>
+ <tbody id="threats-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- CONTROLS -->
+ <div class="section" id="s-controls">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Security Controls</div>
+ <div class="page-sub">Implemented or planned safeguards</div>
+ </div>
+ <div class="page-actions">
+ <button class="btn btn-accent" onclick="showControlModal()">+ New Control</button>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header">
+ <div class="filters-bar">
+ <span class="filter-chip active" data-fcst="all" onclick="filterControls(this)">All</span>
+ <span class="filter-chip fc-ok" data-fcst="Implementado" onclick="filterControls(this)">Implemented</span>
+ <span class="filter-chip fc-high" data-fcst="Parcial" onclick="filterControls(this)">Partial</span>
+ <span class="filter-chip fc-crit" data-fcst="Pendiente" onclick="filterControls(this)">Pending</span>
+ </div>
+ </div>
+ <div class="tbl-wrap tbl-scroll">
+ <table>
+ <thead>
+ <tr>
+ <th>Control</th><th>Type</th><th>Status</th>
+ <th>Effectiveness</th><th>Mitigated threats</th><th>Actions</th>
+ </tr>
+ </thead>
+ <tbody id="controls-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- RISKS -->
+ <div class="section" id="s-risks">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Risk Register</div>
+ <div class="page-sub">Assets × threats cross-reference with control mitigation</div>
+ </div>
+ <div class="page-actions">
+ <button class="btn btn-ghost btn-sm" onclick="recalcAll()"> Recalculate todo</button>
+ <button class="btn btn-accent" onclick="showRiskModal()">+ Add Risk</button>
+ </div>
+ </div>
+
+ <div class="card">
+ <div class="card-header">
+ <div class="filters-bar">
+ <span class="filter-chip active" data-fr="all" onclick="filterRisks(this)">All</span>
+ <span class="filter-chip fc-crit" data-fr="Critical" onclick="filterRisks(this)">Critical</span>
+ <span class="filter-chip fc-high" data-fr="High" onclick="filterRisks(this)">High</span>
+ <span class="filter-chip" data-fr="Medium" onclick="filterRisks(this)">Medium</span>
+ <span class="filter-chip" data-fr="Low" onclick="filterRisks(this)">Low</span>
+ </div>
+ </div>
+ <div class="tbl-wrap tbl-scroll">
+ <table>
+ <thead>
+ <tr>
+ <th>#</th><th>Asset</th><th>Threat</th><th>Prob.</th>
+ <th>Impact</th><th>Base Score</th><th>Net Score</th><th>Level</th><th>Status</th><th>Actions</th>
+ </tr>
+ </thead>
+ <tbody id="risks-tbody"></tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+
+ <!-- MATRIX -->
+ <div class="section" id="s-matrix">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Risk Matrix 5×5</div>
+ <div class="page-sub">Probability vs Impact — each dot is an active risk</div>
+ </div>
+ </div>
+
+ <div class="grid2" style="align-items:start">
+ <div class="card">
+ <div class="card-header"><div class="card-title">Heat map</div></div>
+ <div class="card-body">
+ <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:8px">
+ <div style="writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;color:var(--textdim);letter-spacing:.6px;text-transform:uppercase;padding-bottom:8px">PROBABILITY</div>
+ <div style="flex:1">
+ <div class="matrix" id="risk-matrix"></div>
+ <div style="display:grid;grid-template-columns:40px repeat(5,1fr);gap:2px;margin-top:4px">
+ <div></div>
+ <div style="text-align:center;font-size:9px;color:var(--textdim)">1</div>
+ <div style="text-align:center;font-size:9px;color:var(--textdim)">2</div>
+ <div style="text-align:center;font-size:9px;color:var(--textdim)">3</div>
+ <div style="text-align:center;font-size:9px;color:var(--textdim)">4</div>
+ <div style="text-align:center;font-size:9px;color:var(--textdim)">5</div>
+ </div>
+ <div style="text-align:center;font-size:9px;color:var(--textdim);letter-spacing:.6px;text-transform:uppercase;margin-top:4px">IMPACT</div>
+ </div>
+ </div>
+ <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+ <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:#f0fdf4;border:1px solid #86efac"></div><span style="font-size:9px;color:var(--textdim)">Low</span></div>
+ <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:#f0fdf4;border:1px solid #bbf7d0"></div><span style="font-size:9px;color:var(--textdim)">Medium-bajo</span></div>
+ <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:#fefce8;border:1px solid #fde047"></div><span style="font-size:9px;color:var(--textdim)">Medium</span></div>
+ <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:#fff7ed;border:1px solid #fdba74"></div><span style="font-size:9px;color:var(--textdim)">High</span></div>
+ <div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:10px;border-radius:2px;background:#fef2f2;border:1px solid #fca5a5"></div><span style="font-size:9px;color:var(--textdim)">Critical</span></div>
+ </div>
+ </div>
+ </div>
+
+ <div style="display:flex;flex-direction:column;gap:12px">
+ <div class="card">
+ <div class="card-header"><div class="card-title"> Risks in matrix</div></div>
+ <div class="card-body" id="matrix-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto"></div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- REPORT -->
+ <div class="section" id="s-report">
+ <div class="page-header">
+ <div>
+ <div class="page-title">Executive Report</div>
+ <div class="page-sub">Automatically generated summary</div>
+ </div>
+ <div class="page-actions">
+ <button class="btn btn-accent" onclick="generateReport()"> Generate report</button>
+ <button class="btn btn-ghost btn-sm" onclick="exportExcel()"> Export Excel</button>
+ </div>
+ </div>
+ <div id="report-content">
+ <div class="empty" style="padding:60px 20px">
+ <div class="empty-icon"></div>
+ <div class="empty-text">Click "Generate report" to produce the executive summary</div>
+ <div class="empty-sub">Requires at least assets + calculated risks</div>
+ </div>
+ </div>
+ </div>
+
+ </main>
+</div>
+
+<!-- MODALS -->
+
+<!-- ASSET MODAL -->
+<div class="overlay" id="modal-asset">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="modal-title" id="asset-modal-title">New Asset</div>
+ <button class="modal-close" onclick="closeModal('modal-asset')"></button>
+ </div>
+ <div class="modal-body">
+ <div style="display:flex;flex-direction:column;gap:14px">
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Name</div>
+ <input type="text" id="a-name" placeholder="e.g. PLC-01 Line A">
+ </div>
+ <div class="form-group" style="flex:0 0 140px">
+ <div class="form-label">Type</div>
+ <select id="a-type">
+ <option>PLC</option><option>HMI</option><option>RTU</option>
+ <option>Servidor</option><option>Network</option><option>Endpoint</option>
+ <option>Firewall</option><option>Historian</option><option>SCADA</option><option>Otro</option>
+ </select>
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Purdue Level</div>
+ <select id="a-purdue">
+ <option value="0">L0 — Physical process</option>
+ <option value="1">L1 — Basic control (PLC/RTU)</option>
+ <option value="2">L2 — Supervision (SCADA/HMI)</option>
+ <option value="3">L3 — Operations (MES/Historian)</option>
+ <option value="3.5">L3.5 — Industrial DMZ</option>
+ <option value="4">L4 — Corporate IT network</option>
+ <option value="5">L5 — Internet/External</option>
+ </select>
+ </div>
+ <div class="form-group" style="flex:0 0 130px">
+ <div class="form-label">Business criticality (1–5)</div>
+ <input type="number" id="a-crit" min="1" max="5" value="3">
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">IP / Identifier</div>
+ <input type="text" id="a-ip" placeholder="192.168.1.10">
+ </div>
+ <div class="form-group">
+ <div class="form-label">Owner / Responsible</div>
+ <input type="text" id="a-owner" placeholder="e.g. OT Team">
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Notes</div>
+ <textarea id="a-notes" placeholder="Additional information..."></textarea>
+ </div>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-ghost" onclick="closeModal('modal-asset')">Cancel</button>
+ <button class="btn btn-accent" onclick="saveAsset()">Save</button>
+ </div>
+ </div>
+</div>
+
+<!-- THREAT MODAL -->
+<div class="overlay" id="modal-threat">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="modal-title" id="threat-modal-title">New Threat</div>
+ <button class="modal-close" onclick="closeModal('modal-threat')"></button>
+ </div>
+ <div class="modal-body">
+ <div style="display:flex;flex-direction:column;gap:14px">
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Name</div>
+ <input type="text" id="t-name" placeholder="e.g. Ransomware in OT network">
+ </div>
+ <div class="form-group" style="flex:0 0 140px">
+ <div class="form-label">Category</div>
+ <select id="t-cat">
+ <option>ICS/OT</option><option>Malware</option><option>Acceso</option>
+ <option>Network</option><option>Interno</option><option>Physical</option><option>Otro</option>
+ </select>
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">MITRE ID</div>
+ <input type="text" id="t-mitre" placeholder="e.g. T0800">
+ </div>
+ <div class="form-group">
+ <div class="form-label">Attack vector</div>
+ <select id="t-vector">
+ <option>Network</option><option>Local</option><option>Physical</option><option>Adjacent</option>
+ </select>
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Probability (1–5)</div>
+ <input type="number" id="t-prob" min="1" max="5" value="3">
+ </div>
+ <div class="form-group">
+ <div class="form-label">Integrity impact (1–5)</div>
+ <input type="number" id="t-impint" min="1" max="5" value="3">
+ </div>
+ <div class="form-group">
+ <div class="form-label">Availability impact (1–5)</div>
+ <input type="number" id="t-impdis" min="1" max="5" value="3">
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Description</div>
+ <textarea id="t-desc" placeholder="Threat description..."></textarea>
+ </div>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-ghost" onclick="closeModal('modal-threat')">Cancel</button>
+ <button class="btn btn-accent" onclick="saveThreat()">Save</button>
+ </div>
+ </div>
+</div>
+
+<!-- CONTROL MODAL -->
+<div class="overlay" id="modal-control">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="modal-title" id="ctrl-modal-title">New Control</div>
+ <button class="modal-close" onclick="closeModal('modal-control')"></button>
+ </div>
+ <div class="modal-body">
+ <div style="display:flex;flex-direction:column;gap:14px">
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Control name</div>
+ <input type="text" id="c-name" placeholder="e.g. OT/IT network segmentation">
+ </div>
+ <div class="form-group" style="flex:0 0 140px">
+ <div class="form-label">Type</div>
+ <select id="c-type">
+ <option>Preventive</option><option>Detective</option>
+ <option>Corrective</option><option>Deterrent</option>
+ </select>
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group" style="flex:0 0 160px">
+ <div class="form-label">Status</div>
+ <select id="c-status">
+ <option>Implemented</option><option>Partial</option><option>Pending</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Estimated effectiveness (0–100%)</div>
+ <input type="number" id="c-eff" min="0" max="100" value="70">
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Mitigates threats</div>
+ <div style="font-size:10px;color:var(--textdim);margin-bottom:6px">Select one or more.</div>
+ <div id="c-threats-list" style="
+ border:1px solid var(--border2);border-radius:var(--r);
+ background:#fff;max-height:160px;overflow-y:auto;padding:4px;
+ display:flex;flex-direction:column;gap:2px;
+ "></div>
+ <input type="hidden" id="c-threats">
+ </div>
+ <div class="form-group">
+ <div class="form-label">Notes</div>
+ <textarea id="c-notes" placeholder="Control description..."></textarea>
+ </div>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-ghost" onclick="closeModal('modal-control')">Cancel</button>
+ <button class="btn btn-accent" onclick="saveControl()">Save</button>
+ </div>
+ </div>
+</div>
+
+<!-- RISK MODAL -->
+<div class="overlay" id="modal-risk">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="modal-title">Add Risk Manual</div>
+ <button class="modal-close" onclick="closeModal('modal-risk')"></button>
+ </div>
+ <div class="modal-body">
+ <div style="display:flex;flex-direction:column;gap:14px">
+ <div class="alert alert-info"> Al guardar se calculará el risk neto aplicando los controls vinculados a la amenaza.</div>
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Asset</div>
+ <select id="r-asset"></select>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Threat</div>
+ <select id="r-threat"></select>
+ </div>
+ </div>
+ <div class="form-row">
+ <div class="form-group">
+ <div class="form-label">Status</div>
+ <select id="r-status">
+ <option>Open</option><option>In treatment</option>
+ <option>Accepted</option><option>Transferred</option><option>Closed</option>
+ </select>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Risk owner</div>
+ <input type="text" id="r-owner" placeholder="e.g. CISO">
+ </div>
+ </div>
+ <div class="form-group">
+ <div class="form-label">Notes / Plan de tratamiento</div>
+ <textarea id="r-notes" placeholder="Actions to take..."></textarea>
+ </div>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-ghost" onclick="closeModal('modal-risk')">Cancel</button>
+ <button class="btn btn-accent" onclick="saveRisk()">Calculate & save</button>
+ </div>
+ </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="overlay" id="modal-import">
+ <div class="modal">
+ <div class="modal-header">
+ <div class="modal-title">Import data</div>
+ <button class="modal-close" onclick="closeModal('modal-import')"></button>
+ </div>
+ <div class="modal-body">
+ <div style="display:flex;flex-direction:column;gap:14px">
+ <div class="alert alert-info">Import a JSON with the structure: <code style="color:var(--text)">{assets,threats,controls,risks}</code>. Puedes exportar primero para ver el formato.</div>
+ <div class="drop-zone" id="import-zone" onclick="document.getElementById('import-file').click()" ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)">
+ <div class="drop-zone-icon"></div>
+ <div>Click or drag a JSON file</div>
+ <div style="font-size:10px;margin-top:4px;color:var(--textdim)">.json files only</div>
+ </div>
+ <input type="file" id="import-file" accept=".json" style="display:none" onchange="importFile(event)">
+ <div id="import-preview" style="display:none">
+ <div class="alert alert-ok" id="import-ok"></div>
+ </div>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button class="btn btn-ghost" onclick="closeModal('modal-import')">Close</button>
+ </div>
+ </div>
+</div>
+
+<!-- SCRIPTS -->
+<script>
+// STATE 
+let state = {
+ assets: [],
+ threats: [],
+ controls: [],
+ risks: [],
+ _editId: null
+};
+let _aidx = 0, _tidx = 0, _cidx = 0, _ridx = 0;
+const uid = () => ++_ridx;
+
+// MITRE-BASED THREAT CATALOG 
+const DEFAULT_THREATS = [
+ // ICS/OT — MITRE ATT&CK for ICS
+ {id:'T01',name:'Control logic modification (PLC)',cat:'ICS/OT',mitre:'T0833',vector:'Red',prob:3,impInt:5,impDis:5,desc:'Attacker modifies the ladder/Function Block logic of a PLC to alter the controlled physical process.'},
+ {id:'T02',name:'Response function inhibition',cat:'ICS/OT',mitre:'T0816',vector:'Red',prob:2,impInt:4,impDis:5,desc:'Blocking SIS safety systems or inhibiting critical process alarms.'},
+ {id:'T03',name:'Man-in-the-Middle on Modbus/DNP3',cat:'ICS/OT',mitre:'T0830',vector:'Adyacente',prob:3,impInt:4,impDis:3,desc:'Interception and manipulation of Modbus TCP or DNP3 communications to inject false commands.'},
+ {id:'T04',name:'Unauthenticated HMI access',cat:'ICS/OT',mitre:'T0866',vector:'Red',prob:4,impInt:4,impDis:4,desc:'HMI interfaces without authentication or with default credentials exposed on the OT network.'},
+ {id:'T05',name:'OT asset scanning and discovery',cat:'ICS/OT',mitre:'T0846',vector:'Red',prob:4,impInt:1,impDis:2,desc:'Active reconnaissance of the OT network to identify PLCs, HMIs and industrial protocols.'},
+ {id:'T06',name:'Outdated firmware exploitation',cat:'ICS/OT',mitre:'T0862',vector:'Red',prob:3,impInt:4,impDis:4,desc:'Exploitation of known CVEs in unpatched ICS device firmware.'},
+ {id:'T07',name:'Denial of service to controller',cat:'ICS/OT',mitre:'T0814',vector:'Red',prob:3,impInt:2,impDis:5,desc:'Packet flood or malformed commands that saturate a PLC/RTU CPU.'},
+ {id:'T08',name:'Unauthorized OT↔IT communication',cat:'ICS/OT',mitre:'T0884',vector:'Red',prob:3,impInt:3,impDis:3,desc:'Lateral connections between IT and OT zones bypassing the DMZ or industrial firewall.'},
+ // Malware
+ {id:'T09',name:'Ransomware on corporate network',cat:'Malware',mitre:'T0886',vector:'Red',prob:4,impInt:3,impDis:5,desc:'Mass encryption of files on IT servers, with possible propagation to the OT network through unsegmented connections.'},
+ {id:'T10',name:'ICS-specific malware (e.g. CRASHOVERRIDE)',cat:'Malware',mitre:'T0828',vector:'Red',prob:1,impInt:5,impDis:5,desc:'Malware designed to attack ICS infrastructure, capable of disrupting physical processes.'},
+ {id:'T11',name:'Remote access trojan (RAT)',cat:'Malware',mitre:'T0889',vector:'Red',prob:3,impInt:4,impDis:3,desc:'Implant providing persistent remote control over a compromised system.'},
+ // Acceso
+ {id:'T12',name:'Default credentials en dispositivos',cat:'Access',mitre:'T0812',vector:'Red',prob:4,impInt:4,impDis:3,desc:'Use of factory default passwords on PLCs, industrial switches and HMIs never changed.'},
+ {id:'T13',name:'Brute force / Credential stuffing',cat:'Access',mitre:'T0809',vector:'Red',prob:3,impInt:3,impDis:2,desc:'Automated authentication attacks against VPNs, RDP, OT management web panels.'},
+ {id:'T14',name:'Targeted phishing (spear phishing)',cat:'Access',mitre:'T1566',vector:'Red',prob:4,impInt:3,impDis:3,desc:'Fraudulent emails targeting OT operators or plant engineers to steal credentials.'},
+ {id:'T15',name:'Legitimate remote access abuse (VPN/RDP)',cat:'Access',mitre:'T0822',vector:'Red',prob:3,impInt:4,impDis:4,desc:'Exploitation or abuse of remote maintenance connections by vendors or employees.'},
+ // Red
+ {id:'T16',name:'ARP Spoofing / Network poisoning',cat:'Network',mitre:'T0856',vector:'Adyacente',prob:3,impInt:3,impDis:3,desc:'Network traffic manipulation in OT segments via ARP poisoning to redirect communications.'},
+ {id:'T17',name:'OPC-UA protocol attack',cat:'Network',mitre:'T0885',vector:'Red',prob:2,impInt:4,impDis:3,desc:'Exploitation of vulnerabilities in OPC-UA servers to gain access to process data or execute code.'},
+ {id:'T18',name:'Distributed denial of service (DDoS)',cat:'Network',mitre:'T0814',vector:'Red',prob:2,impInt:1,impDis:5,desc:'Network infrastructure saturation preventing communications between control systems.'},
+ // Interno
+ {id:'T19',name:'Insider threat — deliberate sabotage',cat:'Insider',mitre:'T0882',vector:'Local',prob:2,impInt:5,impDis:5,desc:'Employee or contractor with legitimate access performs deliberate destructive actions on the system.'},
+ {id:'T20',name:'Insider threat — negligence/error',cat:'Insider',mitre:'T0839',vector:'Local',prob:4,impInt:3,impDis:3,desc:'Misconfiguration, accidental disconnection or incorrect firmware load by operator without malicious intent.'},
+ {id:'T21',name:'Administrator privilege abuse',cat:'Insider',mitre:'T0874',vector:'Local',prob:3,impInt:4,impDis:3,desc:'User with privileged accounts accesses systems outside their scope or extracts sensitive information.'},
+ // Físico
+ {id:'T22',name:'Unauthorized physical access to control room',cat:'Physical',mitre:'T0813',vector:'Físico',prob:2,impInt:4,impDis:4,desc:'Intrusión física a sala de control, rack de PLCs o panel de operación no controls de acceso físico adecuados.'},
+ {id:'T23',name:'USB / malicious device insertion',cat:'Physical',mitre:'T0847',vector:'Físico',prob:3,impInt:4,impDis:3,desc:'Malware introduction via USB or other removable media connected directly to OT stations.'},
+];
+
+// DEFAULT CONTROLS 
+const DEFAULT_CONTROLS = [
+ {id:'C01',name:'OT/IT network segmentation with industrial firewall',type:'Preventivo',status:'Implementado',eff:80,threats:'T03,T08,T16',notes:'L2/L3 firewall with whitelist policies between zones'},
+ {id:'C02',name:'Default credential change',type:'Preventivo',status:'Parcial',eff:60,threats:'T04,T12,T13',notes:'Pending on legacy devices'},
+ {id:'C03',name:'Firmware patching / updates',type:'Preventivo',status:'Parcial',eff:55,threats:'T06,T10,T17',notes:'Active semi-annual patching cycle'},
+ {id:'C04',name:'OT traffic monitoring (IDS/ICS)',type:'Detective',status:'Pendiente',eff:0,threats:'T01,T03,T05,T07',notes:'Under evaluation: Claroty/Dragos'},
+ {id:'C05',name:'Physical access control (card + CCTV)',type:'Preventivo',status:'Implementado',eff:75,threats:'T22,T23',notes:'Biometric access in control rooms'},
+ {id:'C06',name:'USB block policy in OT',type:'Preventivo',status:'Parcial',eff:50,threats:'T23',notes:'Blocked on Windows stations, pending on legacy HMIs'},
+ {id:'C07',name:'MFA on VPN / RDP access',type:'Preventivo',status:'Pendiente',eff:0,threats:'T13,T14,T15',notes:'Project started for Q3'},
+ {id:'C08',name:'Operator training and awareness',type:'Preventivo',status:'Implementado',eff:40,threats:'T14,T19,T20',notes:'Annual mandatory training'},
+ {id:'C09',name:'OT backup and recovery plan',type:'Correctivo',status:'Parcial',eff:60,threats:'T09,T10,T07',notes:'Weekly PLC configuration backup'},
+];
+
+// NAVIGATION 
+function nav(el) {
+ document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+ document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+ el.classList.add('active');
+ const id = el.dataset.nav;
+ const sec = document.getElementById('s-'+id);
+ if(sec) sec.classList.add('active');
+ if(id==='matrix') renderMatrix();
+ if(id==='dashboard') renderDashboard();
+}
+
+// RENDER HELPERS 
+function riskLevel(score){
+ if(score>=15) return {label:'Critical',cls:'rb-crit'};
+ if(score>=10) return {label:'High',cls:'rb-high'};
+ if(score>=5) return {label:'Medium',cls:'rb-med'};
+ return {label:'Low',cls:'rb-low'};
+}
+function critLabel(n){
+ const m=['','Very Low','Low','Medium','High','Very High'];
+ return m[n]||n;
+}
+function probLabel(n){
+ const m=['','Very unlikely','Unlikely','Possible','Likely','Very likely'];
+ return m[n]||n;
+}
+
+// ASSETS 
+function renderAssets(filter='all'){
+ const tbody = document.getElementById('assets-tbody');
+ const items = filter==='all'? state.assets : state.assets.filter(a=>a.type===filter);
+ if(!items.length){
+ tbody.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon"></div><div class="empty-text">No assets. Añade el primero.</div></div></td></tr>`;
+ return;
+ }
+ tbody.innerHTML = items.map(a=>`
+ <tr>
+ <td><strong>${a.name}</strong>${a.notes?`<br><span style="color:var(--textdim);font-size:10px">${a.notes}</span>`:''}</td>
+ <td><span class="rbadge rb-info">${a.type}</span></td>
+ <td style="font-size:10px;color:var(--textmed)">L${a.purdue}</td>
+ <td><span class="rbadge ${a.crit>=4?'rb-crit':a.crit===3?'rb-high':'rb-low'}">${critLabel(a.crit)}</span></td>
+ <td class="td-mono">${a.ip||'—'}</td>
+ <td style="color:var(--textmed)">${a.owner||'—'}</td>
+ <td>
+ <div style="display:flex;gap:4px">
+ <button class="btn btn-ghost btn-sm btn-icon" onclick="editAsset('${a.id}')" title="Editar"></button>
+ <button class="btn btn-danger btn-sm btn-icon" onclick="delAsset('${a.id}')" title="Eliminar"></button>
+ </div>
+ </td>
+ </tr>`).join('');
+ document.getElementById('nb-assets').textContent = state.assets.length;
+}
+
+function filterAssets(el){
+ document.querySelectorAll('[data-ftype]').forEach(e=>e.classList.remove('active'));
+ el.classList.add('active');
+ renderAssets(el.dataset.ftype);
+}
+
+function showAssetModal(id=null){
+ state._editId = id;
+ document.getElementById('asset-modal-title').textContent = id?'Edit Asset':'New Asset';
+ const a = id? state.assets.find(x=>x.id===id) : {};
+ document.getElementById('a-name').value = a.name||'';
+ document.getElementById('a-type').value = a.type||'PLC';
+ document.getElementById('a-purdue').value = a.purdue||'1';
+ document.getElementById('a-crit').value = a.crit||3;
+ document.getElementById('a-ip').value = a.ip||'';
+ document.getElementById('a-owner').value = a.owner||'';
+ document.getElementById('a-notes').value = a.notes||'';
+ document.getElementById('modal-asset').classList.add('show');
+}
+
+function saveAsset(){
+ const name = document.getElementById('a-name').value.trim();
+ if(!name) return alert('Name is required.');
+ const obj = {
+ id: state._editId || ('A'+String(++_aidx).padStart(3,'0')),
+ name, type: document.getElementById('a-type').value,
+ purdue: document.getElementById('a-purdue').value,
+ crit: +document.getElementById('a-crit').value,
+ ip: document.getElementById('a-ip').value.trim(),
+ owner: document.getElementById('a-owner').value.trim(),
+ notes: document.getElementById('a-notes').value.trim()
+ };
+ if(state._editId){
+ const idx = state.assets.findIndex(x=>x.id===state._editId);
+ state.assets[idx]=obj;
+ } else state.assets.push(obj);
+ closeModal('modal-asset');
+ renderAssets();
+ updateRiskSelects();
+}
+
+function editAsset(id){ showAssetModal(id) }
+function delAsset(id){
+ if(!confirm('Delete this asset and its associated risks?')) return;
+ state.assets = state.assets.filter(a=>a.id!==id);
+ state.risks = state.risks.filter(r=>r.assetId!==id);
+ renderAssets(); renderRisks(); updateBadges();
+}
+
+// THREATS 
+function renderThreats(filter='all'){
+ const tbody = document.getElementById('threats-tbody');
+ const items = filter==='all'? state.threats : state.threats.filter(t=>t.cat===filter);
+ if(!items.length){
+ tbody.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon"></div><div class="empty-text">No threats.</div></div></td></tr>`;
+ return;
+ }
+ tbody.innerHTML = items.map(t=>`
+ <tr>
+ <td>
+ <strong>${t.name}</strong>
+ ${t.desc?`<br><span style="color:var(--textdim);font-size:9px">${t.desc.substring(0,80)}…</span>`:''}
+ </td>
+ <td><span class="rbadge rb-info">${t.cat}</span></td>
+ <td>${t.mitre?`<span class="mitre-tag">${t.mitre}</span>`:'—'}</td>
+ <td>
+ <div class="pbar-wrap" style="min-width:80px">
+ <div class="pbar"><div class="pbar-fill ${t.prob>=4?'pf-danger':t.prob===3?'pf-warn':'pf-ok'}" style="width:${t.prob*20}%"></div></div>
+ <span style="font-size:9px;color:var(--textmed);width:14px">${t.prob}</span>
+ </div>
+ </td>
+ <td>
+ <div class="pbar-wrap" style="min-width:80px">
+ <div class="pbar"><div class="pbar-fill ${t.impInt>=4?'pf-danger':t.impInt===3?'pf-warn':'pf-ok'}" style="width:${t.impInt*20}%"></div></div>
+ <span style="font-size:9px;color:var(--textmed);width:14px">${t.impInt}</span>
+ </div>
+ </td>
+ <td>
+ <div class="pbar-wrap" style="min-width:80px">
+ <div class="pbar"><div class="pbar-fill ${t.impDis>=4?'pf-danger':t.impDis===3?'pf-warn':'pf-ok'}" style="width:${t.impDis*20}%"></div></div>
+ <span style="font-size:9px;color:var(--textmed);width:14px">${t.impDis}</span>
+ </div>
+ </td>
+ <td>
+ <div style="display:flex;gap:4px">
+ <button class="btn btn-ghost btn-sm btn-icon" onclick="editThreat('${t.id}')" title="Editar"></button>
+ <button class="btn btn-danger btn-sm btn-icon" onclick="delThreat('${t.id}')" title="Eliminar"></button>
+ </div>
+ </td>
+ </tr>`).join('');
+ document.getElementById('nb-threats').textContent = state.threats.length;
+}
+
+function filterThreats(el){
+ document.querySelectorAll('[data-ftcat]').forEach(e=>e.classList.remove('active'));
+ el.classList.add('active');
+ renderThreats(el.dataset.ftcat);
+}
+
+function showThreatModal(id=null){
+ state._editId=id;
+ document.getElementById('threat-modal-title').textContent=id?'Edit Threat':'New Threat';
+ const t=id?state.threats.find(x=>x.id===id):{};
+ document.getElementById('t-name').value=t.name||'';
+ document.getElementById('t-cat').value=t.cat||'ICS/OT';
+ document.getElementById('t-mitre').value=t.mitre||'';
+ document.getElementById('t-vector').value=t.vector||'Red';
+ document.getElementById('t-prob').value=t.prob||3;
+ document.getElementById('t-impint').value=t.impInt||3;
+ document.getElementById('t-impdis').value=t.impDis||3;
+ document.getElementById('t-desc').value=t.desc||'';
+ document.getElementById('modal-threat').classList.add('show');
+}
+
+function saveThreat(){
+ const name=document.getElementById('t-name').value.trim();
+ if(!name) return alert('Name is required.');
+ const obj={
+ id:state._editId||('T'+String(++_tidx).padStart(3,'0')),
+ name,cat:document.getElementById('t-cat').value,
+ mitre:document.getElementById('t-mitre').value.trim(),
+ vector:document.getElementById('t-vector').value,
+ prob:+document.getElementById('t-prob').value,
+ impInt:+document.getElementById('t-impint').value,
+ impDis:+document.getElementById('t-impdis').value,
+ desc:document.getElementById('t-desc').value.trim()
+ };
+ if(state._editId){const idx=state.threats.findIndex(x=>x.id===state._editId);state.threats[idx]=obj;}
+ else state.threats.push(obj);
+ closeModal('modal-threat');
+ renderThreats();
+ updateRiskSelects();
+}
+
+function editThreat(id){showThreatModal(id)}
+function delThreat(id){
+ if(!confirm('Delete this threat?')) return;
+ state.threats=state.threats.filter(t=>t.id!==id);
+ state.risks=state.risks.filter(r=>r.threatId!==id);
+ renderThreats();renderRisks();updateBadges();
+}
+
+// CONTROLS 
+function renderControls(filter='all'){
+ const tbody=document.getElementById('controls-tbody');
+ const items=filter==='all'?state.controls:state.controls.filter(c=>c.status===filter);
+ if(!items.length){
+ tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon"></div><div class="empty-text">No controls.</div></div></td></tr>`;
+ return;
+ }
+ tbody.innerHTML=items.map(c=>`
+ <tr>
+ <td><strong>${c.name}</strong>${c.notes?`<br><span style="color:var(--textdim);font-size:9px">${c.notes}</span>`:''}</td>
+ <td><span class="rbadge rb-info">${c.type}</span></td>
+ <td><span class="rbadge ${c.status==='Implemented'?'rb-ok':c.status==='Partial'?'rb-partial':'rb-none'}">${c.status}</span></td>
+ <td>
+ <div class="pbar-wrap" style="min-width:90px">
+ <div class="pbar"><div class="pbar-fill ${c.eff>=70?'pf-ok':c.eff>=40?'pf-warn':'pf-danger'}" style="width:${c.eff}%"></div></div>
+ <span style="font-size:9px;color:var(--textmed);width:28px">${c.eff}%</span>
+ </div>
+ </td>
+ <td style="font-size:10px;color:var(--textdim)">${c.threats||'—'}</td>
+ <td>
+ <div style="display:flex;gap:4px">
+ <button class="btn btn-ghost btn-sm btn-icon" onclick="editControl('${c.id}')" title="Editar"></button>
+ <button class="btn btn-danger btn-sm btn-icon" onclick="delControl('${c.id}')" title="Eliminar"></button>
+ </div>
+ </td>
+ </tr>`).join('');
+ document.getElementById('nb-controls').textContent=state.controls.length;
+}
+
+function filterControls(el){
+ document.querySelectorAll('[data-fcst]').forEach(e=>e.classList.remove('active'));
+ el.classList.add('active');
+ renderControls(el.dataset.fcst);
+}
+
+function showControlModal(id=null){
+ state._editId=id;
+ document.getElementById('ctrl-modal-title').textContent=id?'Edit Control':'New Control';
+ const c=id?state.controls.find(x=>x.id===id):{};
+ document.getElementById('c-name').value=c.name||'';
+ document.getElementById('c-type').value=c.type||'Preventivo';
+ document.getElementById('c-status').value=c.status||'Implementado';
+ document.getElementById('c-eff').value=c.eff||70;
+ document.getElementById('c-notes').value=c.notes||'';
+
+ // Build threat checklist
+ const selectedIds = (c.threats||'').split(',').map(s=>s.trim()).filter(Boolean);
+ const listEl = document.getElementById('c-threats-list');
+ listEl.innerHTML = state.threats.map(t=>`
+ <label class="threat-check-item ${selectedIds.includes(t.id)?'checked':''}">
+ <input type="checkbox" value="${t.id}" ${selectedIds.includes(t.id)?'checked':''}
+ onchange="updateThreatCheckItem(this)">
+ <span class="tci-id">${t.id}</span>
+ <span class="tci-name">${t.name}</span>
+ <span class="tci-cat">${t.cat}</span>
+ </label>`).join('');
+
+ document.getElementById('modal-control').classList.add('show');
+}
+
+function updateThreatCheckItem(cb){
+ const label = cb.closest('.threat-check-item');
+ label.classList.toggle('checked', cb.checked);
+}
+
+function saveControl(){
+ const name=document.getElementById('c-name').value.trim();
+ if(!name) return alert('Name is required.');
+ // Collect checked threat IDs
+ const checked = [...document.querySelectorAll('#c-threats-list input[type=checkbox]:checked')]
+ .map(cb=>cb.value).join(',');
+ const obj={
+ id:state._editId||('C'+String(++_cidx).padStart(3,'0')),
+ name,type:document.getElementById('c-type').value,
+ status:document.getElementById('c-status').value,
+ eff:+document.getElementById('c-eff').value,
+ threats:checked,
+ notes:document.getElementById('c-notes').value.trim()
+ };
+ if(state._editId){const idx=state.controls.findIndex(x=>x.id===state._editId);state.controls[idx]=obj;}
+ else state.controls.push(obj);
+ closeModal('modal-control');
+ renderControls();
+ document.getElementById('nb-controls').textContent=state.controls.length;
+}
+
+function editControl(id){showControlModal(id)}
+function delControl(id){
+ if(!confirm('Delete this control?')) return;
+ state.controls=state.controls.filter(c=>c.id!==id);
+ renderControls();updateBadges();
+}
+
+// RISK CALCULATION 
+function calcRisk(assetId, threatId){
+ const asset=state.assets.find(a=>a.id===assetId);
+ const threat=state.threats.find(t=>t.id===threatId);
+ if(!asset||!threat) return null;
+
+ // Base score: prob × max(impInt, impDis) × criticidad del activo / 5
+ const impact = Math.max(threat.impInt, threat.impDis);
+ const baseScore = threat.prob * impact * (asset.crit/5);
+
+ // Find applicable controls
+ const applicableCtrl = state.controls.filter(c=>{
+ if(!c.threats) return false;
+ return c.threats.split(',').map(s=>s.trim()).some(tid=>
+ tid===threatId || tid===threat.id || tid===threat.mitre
+ );
+ });
+
+ // Cumulative reduction: risk_residual = base × (1-E1) × (1-E2) × ...
+ // Pending controls contribute 0, Partial contribute 50% of their effectiveness
+ let residual = baseScore;
+ const appliedDetails = [];
+ applicableCtrl.forEach(c=>{
+ let eff = c.eff / 100;
+ if(c.status==='Partial') eff *= 0.5;
+ if(c.status==='Pending') eff = 0;
+ residual = residual * (1 - eff);
+ appliedDetails.push({name:c.name, eff:Math.round(eff*100), status:c.status});
+ });
+
+ const netScore = Math.max(0, residual);
+ const totalReduction = baseScore > 0 ? Math.round((1 - netScore/baseScore)*100) : 0;
+
+ return {
+ baseScore: Math.round(baseScore*10)/10,
+ netScore: Math.round(netScore*10)/10,
+ appliedControls: applicableCtrl.length,
+ totalReduction,
+ appliedDetails
+ };
+}
+
+// RISKS 
+function updateRiskSelects(){
+ const as=document.getElementById('r-asset');
+ const ts=document.getElementById('r-threat');
+ if(!as||!ts) return;
+ as.innerHTML=state.assets.map(a=>`<option value="${a.id}">${a.name}</option>`).join('');
+ ts.innerHTML=state.threats.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
+}
+
+function showRiskModal(){
+ updateRiskSelects();
+ document.getElementById('r-status').value='Open';
+ document.getElementById('r-owner').value='';
+ document.getElementById('r-notes').value='';
+ document.getElementById('modal-risk').classList.add('show');
+}
+
+function saveRisk(){
+ const assetId=document.getElementById('r-asset').value;
+ const threatId=document.getElementById('r-threat').value;
+ if(!assetId||!threatId) return alert('Select an asset and a threat.');
+
+ // Check duplicate
+ const dup=state.risks.find(r=>r.assetId===assetId&&r.threatId===threatId);
+ if(dup&&!confirm('This asset/threat pair already exists. Overwrite?')) return;
+ if(dup) state.risks=state.risks.filter(r=>!(r.assetId===assetId&&r.threatId===threatId));
+
+ const calc=calcRisk(assetId,threatId);
+ const asset=state.assets.find(a=>a.id===assetId);
+ const threat=state.threats.find(t=>t.id===threatId);
+ const lvl=riskLevel(calc.netScore);
+
+ state.risks.push({
+ id:'R'+String(++_ridx).padStart(3,'0'),
+ assetId,threatId,
+ assetName:asset.name,threatName:threat.name,
+ baseScore:calc.baseScore,
+ netScore:calc.netScore,
+ level:lvl.label,
+ status:document.getElementById('r-status').value,
+ owner:document.getElementById('r-owner').value.trim(),
+ notes:document.getElementById('r-notes').value.trim(),
+ prob:threat.prob,
+ impact:Math.max(threat.impInt,threat.impDis),
+ appliedControls:calc.appliedControls,
+ totalReduction:calc.totalReduction
+ });
+
+ closeModal('modal-risk');
+ renderRisks();
+ updateBadges();
+ renderDashboard();
+}
+
+function recalcAll(){
+ state.risks=state.risks.map(r=>{
+ const calc=calcRisk(r.assetId,r.threatId);
+ if(!calc) return r;
+ const lvl=riskLevel(calc.netScore);
+ const threat=state.threats.find(t=>t.id===r.threatId);
+ return {...r,
+ baseScore:calc.baseScore,
+ netScore:calc.netScore,
+ level:lvl.label,
+ prob:threat?threat.prob:r.prob,
+ impact:threat?Math.max(threat.impInt,threat.impDis):r.impact,
+ appliedControls:calc.appliedControls,
+ totalReduction:calc.totalReduction
+ };
+ });
+ renderRisks();
+ updateBadges();
+ renderDashboard();
+ if(document.getElementById('s-matrix').classList.contains('active')) renderMatrix();
+}
+
+function renderRisks(filter='all'){
+ const tbody=document.getElementById('risks-tbody');
+ const items=filter==='all'?state.risks:state.risks.filter(r=>r.level===filter);
+ if(!items.length){
+ tbody.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-icon"></div><div class="empty-text">Sin risks. Add assets and threats, luego usa "+ Add Risk".</div></div></td></tr>`;
+ document.getElementById('nb-risks').textContent='0';
+ return;
+ }
+ // Sort by netScore desc
+ const sorted=[...items].sort((a,b)=>b.netScore-a.netScore);
+ tbody.innerHTML=sorted.map((r,i)=>{
+ const lvl=riskLevel(r.netScore);
+ return `<tr>
+ <td style="color:var(--textdim);font-size:10px">${i+1}</td>
+ <td><strong>${r.assetName}</strong></td>
+ <td style="font-size:11px;max-width:180px">${r.threatName}</td>
+ <td style="text-align:center">${r.prob}/5</td>
+ <td style="text-align:center">${r.impact}/5</td>
+ <td style="text-align:center;color:var(--textdim)">${r.baseScore}</td>
+ <td style="text-align:center">
+ <strong style="font-size:13px;color:${r.netScore>=15?'var(--danger)':r.netScore>=10?'var(--warn)':r.netScore>=5?'#ea580c':'var(--ok)'}">${r.netScore}</strong>
+ ${r.appliedControls>0?`<div style="font-size:9px;color:var(--ok)">−${r.totalReduction||0}% (${r.appliedControls} ctrls)</div>`:'<div style="font-size:9px;color:var(--danger)">no controls</div>'}
+ </td>
+ <td><span class="rbadge ${lvl.cls}">${lvl.label}</span></td>
+ <td><span class="rbadge rb-info" style="font-size:9px">${r.status}</span></td>
+ <td>
+ <div style="display:flex;gap:4px">
+ <button class="btn btn-danger btn-sm btn-icon" onclick="delRisk('${r.id}')" title="Eliminar"></button>
+ </div>
+ </td>
+ </tr>`;
+ }).join('');
+ document.getElementById('nb-risks').textContent=state.risks.length;
+}
+
+function filterRisks(el){
+ document.querySelectorAll('[data-fr]').forEach(e=>e.classList.remove('active'));
+ el.classList.add('active');
+ renderRisks(el.dataset.fr);
+}
+
+function delRisk(id){
+ if(!confirm('Delete this risk?')) return;
+ state.risks=state.risks.filter(r=>r.id!==id);
+ renderRisks();updateBadges();renderDashboard();
+}
+
+// DASHBOARD 
+function renderDashboard(){
+ const crit=state.risks.filter(r=>r.level==='Critical').length;
+ const high=state.risks.filter(r=>r.level==='High').length;
+ const med=state.risks.filter(r=>r.level==='Medium').length;
+ const low=state.risks.filter(r=>r.level==='Low').length;
+ const ctrlImpl=state.controls.filter(c=>c.status==='Implemented').length;
+
+ document.getElementById('kpi-crit').textContent=crit;
+ document.getElementById('kpi-high').textContent=high;
+ document.getElementById('kpi-ctrl').textContent=ctrlImpl;
+ document.getElementById('kpi-ctrl-total').textContent=state.controls.length;
+
+ // Global score (0-100)
+ let score = '—';
+ if(state.risks.length){
+ const maxPossible=state.risks.length*25;
+ const total=state.risks.reduce((s,r)=>s+r.netScore,0);
+ score=Math.round((total/maxPossible)*100);
+ }
+ document.getElementById('kpi-score').textContent=score==='—'?'—':score;
+
+ // Top risks
+ const topEl=document.getElementById('top-risks-list');
+ const sorted=[...state.risks].sort((a,b)=>b.netScore-a.netScore).slice(0,5);
+ if(!sorted.length){
+ topEl.innerHTML=`<div class="empty"><div class="empty-icon"></div><div class="empty-text">No risks calculated</div></div>`;
+ } else {
+ topEl.innerHTML=sorted.map(r=>{
+ const lvl=riskLevel(r.netScore);
+ return `<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+ <span class="rbadge ${lvl.cls}" style="min-width:54px;justify-content:center">${lvl.label}</span>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.assetName}</div>
+ <div style="font-size:9px;color:var(--textdim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.threatName}</div>
+ </div>
+ <div style="font-family:var(--sans);font-weight:700;font-size:16px;color:${r.netScore>=15?'var(--danger)':r.netScore>=10?'var(--warn)':'#ea580c'}">${r.netScore}</div>
+ </div>`;
+ }).join('');
+ }
+
+ // Distribution
+ const distEl=document.getElementById('dist-chart');
+ const total=state.risks.length||1;
+ const distData=[
+ {label:'Critical',n:crit,color:'var(--danger)'},
+ {label:'High',n:high,color:'var(--warn)'},
+ {label:'Medium',n:med,color:'#ea580c'},
+ {label:'Low',n:low,color:'var(--ok)'},
+ ];
+ distEl.innerHTML=distData.map(d=>`
+ <div>
+ <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:10px">
+ <span style="color:var(--textmed)">${d.label}</span>
+ <span style="color:${d.color};font-weight:600">${d.n}</span>
+ </div>
+ <div class="pbar" style="height:7px">
+ <div class="pbar-fill" style="background:${d.color};width:${Math.round(d.n/total*100)}%"></div>
+ </div>
+ </div>`).join('');
+
+ // Exposed assets
+ const expEl=document.getElementById('exposed-assets');
+ const assetScores={};
+ state.risks.forEach(r=>{
+ if(!assetScores[r.assetId]) assetScores[r.assetId]={name:r.assetName,score:0,count:0};
+ assetScores[r.assetId].score+=r.netScore;
+ assetScores[r.assetId].count++;
+ });
+ const expSorted=Object.values(assetScores).sort((a,b)=>b.score-a.score).slice(0,5);
+ const maxS=expSorted[0]?expSorted[0].score:1;
+ if(!expSorted.length){
+ expEl.innerHTML=`<div class="empty"><div class="empty-icon"></div><div class="empty-text">No data</div></div>`;
+ } else {
+ expEl.innerHTML=expSorted.map(a=>`
+ <div class="heat-row">
+ <div class="heat-label" title="${a.name}">${a.name}</div>
+ <div class="heat-bar"><div class="heat-fill" style="width:${Math.round(a.score/maxS*100)}%;background:${a.score>15?'var(--danger)':a.score>8?'var(--warn)':'var(--ok)'}"></div></div>
+ <span style="font-size:9px;color:var(--textdim);width:20px;text-align:right">${Math.round(a.score)}</span>
+ </div>`).join('');
+ }
+
+ // Control coverage
+ const ctrlEl=document.getElementById('ctrl-coverage');
+ const impl=state.controls.filter(c=>c.status==='Implemented').length;
+ const part=state.controls.filter(c=>c.status==='Partial').length;
+ const pend=state.controls.filter(c=>c.status==='Pending').length;
+ const tot=state.controls.length||1;
+ ctrlEl.innerHTML=`
+ <div style="display:flex;flex-direction:column;gap:10px">
+ <div>
+ <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:10px">
+ <span style="color:var(--ok)"> Implemented</span><span style="font-weight:600;color:var(--ok)">${impl}</span>
+ </div>
+ <div class="pbar" style="height:7px"><div class="pbar-fill pf-ok" style="width:${Math.round(impl/tot*100)}%"></div></div>
+ </div>
+ <div>
+ <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:10px">
+ <span style="color:var(--warn)"> Partial</span><span style="font-weight:600;color:var(--warn)">${part}</span>
+ </div>
+ <div class="pbar" style="height:7px"><div class="pbar-fill pf-warn" style="width:${Math.round(part/tot*100)}%"></div></div>
+ </div>
+ <div>
+ <div style="display:flex;justify-content:space-between;margin-bottom:3px;font-size:10px">
+ <span style="color:var(--danger)"> Pending</span><span style="font-weight:600;color:var(--danger)">${pend}</span>
+ </div>
+ <div class="pbar" style="height:7px"><div class="pbar-fill pf-danger" style="width:${Math.round(pend/tot*100)}%"></div></div>
+ </div>
+ <div style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border);font-size:10px;color:var(--textdim)">
+ Estimated effective coverage: <strong style="color:var(--text)">${tot?Math.round((impl+part*0.5)/tot*100):0}%</strong>
+ </div>
+ </div>`;
+}
+
+// MATRIX 
+function renderMatrix(){
+ const matrixEl=document.getElementById('risk-matrix');
+ const listEl=document.getElementById('matrix-list');
+
+ // Build 5x5 grid (prob 5→1 top, impact 1→5 left)
+ const cells=[];
+ for(let p=5;p>=1;p--){
+ cells.push(`<div class="m-axis-label" style="font-size:10px;color:var(--textdim)">${p}</div>`);
+ for(let i=1;i<=5;i++){
+ const score=p*i;
+ const cls=score>=15?'mc-5':score>=10?'mc-4':score>=7?'mc-3':score>=4?'mc-2':'mc-1';
+ // Find risks in this cell
+ const risks=state.risks.filter(r=>r.prob===p&&r.impact===i);
+ const dotsHtml=risks.slice(0,3).map((r,idx)=>`
+ <div class="m-risk-dot" style="top:${4+idx*10}px;right:${4+idx*8}px" title="${r.assetName}: ${r.threatName} (${r.netScore})"
+ onclick="highlightRisk('${r.id}')">${idx+1}</div>`).join('');
+ cells.push(`<div class="m-cell ${cls}" style="position:relative">
+ ${risks.length?`<span style="font-size:11px;font-weight:700">${risks.length}</span>
+ <span style="font-size:8px;opacity:.7">${risks.length===1?'risk':'risks'}</span>`:
+ `<span style="font-size:9px;opacity:.25">·</span>`}
+ </div>`);
+ }
+ }
+ matrixEl.innerHTML=cells.join('');
+
+ // List
+ const sorted=[...state.risks].sort((a,b)=>b.netScore-a.netScore);
+ if(!sorted.length){
+ listEl.innerHTML=`<div class="empty"><div class="empty-icon"></div><div class="empty-text">No risks in matrix</div></div>`;
+ return;
+ }
+ listEl.innerHTML=sorted.map(r=>{
+ const lvl=riskLevel(r.netScore);
+ return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+ <span class="rbadge ${lvl.cls}" style="min-width:52px;justify-content:center;font-size:8px">${lvl.label}</span>
+ <div style="flex:1;min-width:0">
+ <div style="font-size:10px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.assetName}</div>
+ <div style="font-size:9px;color:var(--textdim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.threatName}</div>
+ </div>
+ <div style="font-size:9px;color:var(--textdim)">P${r.prob}×I${r.impact}</div>
+ <div style="font-weight:700;font-size:12px;color:${r.netScore>=15?'var(--danger)':r.netScore>=10?'var(--warn)':'#ea580c'}">${r.netScore}</div>
+ </div>`;
+ }).join('');
+}
+
+// REPORT 
+function generateReport(){
+ if(!state.risks.length){
+ alert('Add at least one risk before generating the report.');
+ return;
+ }
+ const crit=state.risks.filter(r=>r.level==='Critical');
+ const high=state.risks.filter(r=>r.level==='High');
+ const med=state.risks.filter(r=>r.level==='Medium');
+ const low=state.risks.filter(r=>r.level==='Low');
+ const impl=state.controls.filter(c=>c.status==='Implemented').length;
+ const pend=state.controls.filter(c=>c.status==='Pending').length;
+ const totalScore=state.risks.reduce((s,r)=>s+r.netScore,0);
+ const avgScore=Math.round(totalScore/state.risks.length*10)/10;
+ const date=new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'});
+
+ // Most exposed asset
+ const assetScores={};
+ state.risks.forEach(r=>{
+ if(!assetScores[r.assetId]) assetScores[r.assetId]={name:r.assetName,score:0};
+ assetScores[r.assetId].score+=r.netScore;
+ });
+ const mostExposed=Object.values(assetScores).sort((a,b)=>b.score-a.score)[0];
+
+ // Nivel general
+ const globalLevel = crit.length>0?'CRÍTICO':high.length>3?'ALTO':high.length>0?'MEDIO-ALTO':'MEDIO';
+ const globalColor = crit.length>0?'var(--danger)':high.length>3?'var(--warn)':high.length>0?'#fb923c':'var(--ok)';
+
+ // Top threat categories
+ const catCount={};
+ state.risks.forEach(r=>{
+ const t=state.threats.find(th=>th.id===r.threatId);
+ if(t){catCount[t.cat]=(catCount[t.cat]||0)+1;}
+ });
+ const topCats=Object.entries(catCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c,n])=>`${c} (${n})`).join(', ');
+
+ document.getElementById('report-content').innerHTML=`
+ <div style="display:flex;flex-direction:column;gap:16px">
+
+ <!-- Header -->
+ <div class="card" style="background:var(--text);border-color:var(--text)">
+ <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+ <div>
+ <div style="font-family:var(--sans);font-size:28px;font-weight:400;color:#fff;letter-spacing:-.3px">Informe de Analysis de Riesgos</div>
+ <div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:6px;letter-spacing:.3px;text-transform:uppercase">${date} · RiskLens</div>
+ </div>
+ <div style="text-align:right">
+ <div style="font-size:9px;color:rgba(255,255,255,.5);margin-bottom:6px;letter-spacing:.9px;text-transform:uppercase">Risk level</div>
+ <div style="font-family:var(--sans);font-size:40px;font-weight:400;color:#fff;line-height:1">${globalLevel}</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- Summary KPIs -->
+ <div class="grid4">
+ <div class="kpi kpi-crit"><div class="kpi-label">Critical Risks</div><div class="kpi-value" style="color:var(--danger);font-size:40px">${crit.length}</div><div class="kpi-sub">Immediate action</div></div>
+ <div class="kpi kpi-high"><div class="kpi-label">High Risks</div><div class="kpi-value" style="color:var(--warn);font-size:40px">${high.length}</div><div class="kpi-sub">High priority</div></div>
+ <div class="kpi kpi-ok"><div class="kpi-label">Score Promedio</div><div class="kpi-value" style="color:var(--text)">${avgScore}</div><div class="kpi-sub">Max. 25</div></div>
+ <div class="kpi kpi-info"><div class="kpi-label">Activos evaluados</div><div class="kpi-value" style="color:var(--text)">${state.assets.length}</div><div class="kpi-sub">${state.risks.length} risks</div></div>
+ </div>
+
+ <!-- Narrative -->
+ <div class="card">
+ <div class="card-header"><div class="card-title"> Executive Summary</div></div>
+ <div class="card-body">
+ <div class="narrative">
+ <div class="n-section">
+ <div class="n-title">Overview</div>
+ La evaluación de risks realizada sobre <strong>${state.assets.length} activos</strong> de la organización ha identificado un total de <strong>${state.risks.length} risks</strong>, de los cuales <strong style="color:var(--danger)">${crit.length} son críticos</strong> y <strong style="color:var(--warn)">${high.length} son de nivel alto</strong>. El nivel de risk global de la organización se clasifica como <strong style="color:${globalColor}">${globalLevel}</strong>.
+ </div>
+ ${crit.length>0?`
+ <div class="n-section">
+ <div class="n-title"> Critical risks identified</div>
+ The following risks require immediate attention:
+ <ul style="margin-top:8px;padding-left:16px;display:flex;flex-direction:column;gap:4px">
+ ${crit.slice(0,5).map(r=>`<li><strong>${r.assetName}</strong> — ${r.threatName} (score: <span style="color:var(--danger)">${r.netScore}</span>)</li>`).join('')}
+ </ul>
+ </div>`:''}
+ <div class="n-section">
+ <div class="n-title"> Most exposed asset</div>
+ The asset with the highest risk accumulation is <strong>${mostExposed?mostExposed.name:'N/A'}</strong>, with an accumulated score of ${mostExposed?Math.round(mostExposed.score):0}. It is recommended to prioritize applying controls to this asset.
+ </div>
+ <div class="n-section">
+ <div class="n-title"> Predominant threat vectors</div>
+ The most present threat categories in the analysis are: <strong>${topCats||'N/A'}</strong>. These categories should be the main focus of preventive controls.
+ </div>
+ <div class="n-section">
+ <div class="n-title"> Control status</div>
+ Of the <strong>${state.controls.length} controls</strong> defined, <strong style="color:var(--ok)">${impl} are fully implemented</strong>${pend>0?` y <strong style="color:var(--danger)">${pend} are pending implementation</strong>, which represents a significant mitigation gap`:''}. Se recomienda priorizar la implementación de los controls pendientes, especialmente aquellos que cubren amenazas de nivel crítico.
+ </div>
+ ${high.length>0||crit.length>0?`
+ <div class="n-section">
+ <div class="n-title"> Priority recommendations</div>
+ <ol style="padding-left:16px;display:flex;flex-direction:column;gap:6px">
+ ${pend>0?`<li>Implement the <strong>${pend} controls pendientes</strong> identified, prioritizing preventive ones.</li>`:''}
+ ${crit.length>0?`<li>Address the ${crit.length} critical risk(s) within a maximum of <strong>30 días</strong>.</li>`:''}
+ ${high.length>0?`<li>Establish a treatment plan for the ${high.length} high-level risk(s) in the next <strong>90 días</strong>.</li>`:''}
+ <li>Review network segmentation between OT and IT zones and verify no unauthorized communications exist.</li>
+ <li>Plan a periodic review of the risk register (minimum quarterly).</li>
+ </ol>
+ </div>`:''}
+ </div>
+ </div>
+ </div>
+
+ <!-- Risk table in report -->
+ <div class="card">
+ <div class="card-header"><div class="card-title"> Risk Table by Criticality</div></div>
+ <div class="tbl-wrap">
+ <table>
+ <thead><tr><th>Asset</th><th>Threat</th><th>Score base</th><th>Score neto</th><th>Level</th><th>Status</th></tr></thead>
+ <tbody>
+ ${[...state.risks].sort((a,b)=>b.netScore-a.netScore).map(r=>{
+ const lvl=riskLevel(r.netScore);
+ return `<tr>
+ <td><strong>${r.assetName}</strong></td>
+ <td style="font-size:10px">${r.threatName}</td>
+ <td style="text-align:center;color:var(--textdim)">${r.baseScore}</td>
+ <td style="text-align:center;font-weight:700;color:${r.netScore>=15?'var(--danger)':r.netScore>=10?'var(--warn)':'#ea580c'}">${r.netScore}</td>
+ <td><span class="rbadge ${lvl.cls}">${lvl.label}</span></td>
+ <td><span class="rbadge rb-info" style="font-size:8px">${r.status}</span></td>
+ </tr>`;
+ }).join('')}
+ </tbody>
+ </table>
+ </div>
+ </div>
+
+ <div style="font-size:9px;color:var(--textdim);text-align:center;padding:8px 0">
+ All analysis was performed locally in the browser. No data left this device.
+ · RiskLens v1.0 · ${date}
+ </div>
+ </div>`;
+}
+
+// EXPORT EXCEL 
+function exportExcel(){
+ if(!window.XLSX){alert('XLSX library not available.');return;}
+ const wb=XLSX.utils.book_new();
+
+ // Hoja 1: Dashboard
+ const dashData=[
+ ['RiskLens - Informe de Analysis de Riesgos','','',''],
+ ['Date',new Date().toLocaleDateString('es-ES'),'',''],
+ ['','','',''],
+ ['KPI','Value','',''],
+ ['Critical Risks',state.risks.filter(r=>r.level==='Critical').length,'',''],
+ ['High Risks',state.risks.filter(r=>r.level==='High').length,'',''],
+ ['Riesgos Mediums',state.risks.filter(r=>r.level==='Medium').length,'',''],
+ ['Riesgos Lows',state.risks.filter(r=>r.level==='Low').length,'',''],
+ ['Total Risks',state.risks.length,'',''],
+ ['Controles Implemented',state.controls.filter(c=>c.status==='Implemented').length,'',''],
+ ['Controles Pending',state.controls.filter(c=>c.status==='Pending').length,'',''],
+ ['Total Assets',state.assets.length,'',''],
+ ];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(dashData),'Dashboard');
+
+ // Hoja 2: Activos
+ const assetsData=[['ID','Name','Type','Purdue Level','Criticality','IP/ID','Owner','Notes'],
+ ...state.assets.map(a=>[a.id,a.name,a.type,'L'+a.purdue,a.crit,a.ip,a.owner,a.notes])];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(assetsData),'Assets');
+
+ // Hoja 3: Amenazas
+ const threatsData=[['ID','Name','Category','MITRE ID','Vector','Probability','Integrity Impact','Availability Impact','Description'],
+ ...state.threats.map(t=>[t.id,t.name,t.cat,t.mitre,t.vector,t.prob,t.impInt,t.impDis,t.desc])];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(threatsData),'Threats');
+
+ // Hoja 4: Controles
+ const ctrlData=[['ID','Name','Type','Status','Effectiveness %','Mitigated threats','Notes'],
+ ...state.controls.map(c=>[c.id,c.name,c.type,c.status,c.eff,c.threats,c.notes])];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ctrlData),'Controls');
+
+ // Hoja 5: Risk Register
+ const risksData=[['ID','Asset','Threat','Probability','Impact','Base Score','Net Score','Level','Status','Owner','Notes'],
+ ...[...state.risks].sort((a,b)=>b.netScore-a.netScore).map(r=>[r.id,r.assetName,r.threatName,r.prob,r.impact,r.baseScore,r.netScore,r.level,r.status,r.owner,r.notes])];
+ XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(risksData),'Risk Register');
+
+ XLSX.writeFile(wb,'RiskLens_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// IMPORT 
+function showImportModal(){ document.getElementById('modal-import').classList.add('show'); }
+function dzOver(e){ e.preventDefault(); e.currentTarget.classList.add('dragover'); }
+function dzLeave(e){ e.currentTarget.classList.remove('dragover'); }
+function dzDrop(e){
+ e.preventDefault(); e.currentTarget.classList.remove('dragover');
+ const file=e.dataTransfer.files[0];
+ if(file) loadJSON(file, getImportMode());
+}
+function importFile(e){ const file=e.target.files[0]; if(file) loadJSON(file, getImportMode()); }
+function getImportMode(){ return document.querySelector('input[name="import-mode"]:checked')?.value||'replace'; }
+function updateImportMode(){
+  const mode = getImportMode();
+  document.getElementById('mode-replace-label').style.borderColor = mode==='replace'?'var(--text)':'var(--border)';
+  document.getElementById('mode-merge-label').style.borderColor   = mode==='merge'  ?'var(--text)':'var(--border)';
+}
+function loadJSON(file, mode){
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(mode === 'replace'){
+        if(data.assets)   state.assets   = data.assets;
+        if(data.threats)  state.threats  = data.threats;
+        if(data.controls) state.controls = data.controls;
+        if(data.risks)    state.risks    = data.risks;
+      } else {
+        const existIds = arr => new Set(arr.map(x=>x.id));
+        if(data.assets){   const ex=existIds(state.assets);   state.assets   = [...state.assets,   ...data.assets.filter(x=>!ex.has(x.id))]; }
+        if(data.threats){  const ex=existIds(state.threats);  state.threats  = [...state.threats,  ...data.threats.filter(x=>!ex.has(x.id))]; }
+        if(data.controls){ const ex=existIds(state.controls); state.controls = [...state.controls, ...data.controls.filter(x=>!ex.has(x.id))]; }
+        if(data.risks){    const ex=existIds(state.risks);    state.risks    = [...state.risks,    ...data.risks.filter(x=>!ex.has(x.id))]; }
+      }
+      renderAll(); closeModal('modal-import');
+    } catch(e){ alert('Error parsing JSON: ' + e.message); }
+  };
+  reader.readAsText(file);
+}
+// EXPORT SESSION (JSON)
+function exportSession(){
+  const session = {
+    _version: '1.0',
+    _exported: new Date().toISOString(),
+    _tool: 'RiskLens',
+    assets:   state.assets,
+    threats:  state.threats,
+    controls: state.controls,
+    risks:    state.risks
+  };
+  const blob = new Blob([JSON.stringify(session, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'RiskLens_session_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// SAMPLE DATA 
+function importSample(){
+ if(state.assets.length||state.risks.length){
+ if(!confirm('Load example? This will add data to the current state.')) return;
+ }
+ state.assets=[
+ {id:'A001',name:'PLC-01 Production Line',type:'PLC',purdue:'1',crit:5,ip:'192.168.10.10',owner:'OT Team',notes:'Siemens S7-300, no authentication'},
+ {id:'A002',name:'HMI Control Room',type:'HMI',purdue:'2',crit:4,ip:'192.168.10.50',owner:'OT Team',notes:'Windows XP, unpatched'},
+ {id:'A003',name:'SCADA Server',type:'SCADA',purdue:'3',crit:5,ip:'192.168.20.100',owner:'IT/OT',notes:'Wonderware InTouch'},
+ {id:'A004',name:'IT/OT Firewall',type:'Firewall',purdue:'3.5',crit:4,ip:'10.0.0.1',owner:'IT Security',notes:'Rules not reviewed since 2022'},
+ {id:'A005',name:'Engineering Station',type:'Endpoint',purdue:'2',crit:3,ip:'192.168.10.80',owner:'Maintenance',notes:'USB enabled'},
+ {id:'A006',name:'Industrial L2 Switch',type:'Red',purdue:'1',crit:3,ip:'192.168.10.1',owner:'OT Team',notes:'Default credentials'},
+ ];
+ _aidx=6;
+
+ // Load default threats
+ state.threats=[...DEFAULT_THREATS];
+
+ // Load default controls
+ state.controls=[...DEFAULT_CONTROLS];
+ _cidx=9;
+
+ // Pre-calculated risks
+ state.risks=[];
+ _ridx=0;
+ const addRisk=(aid,tid,status,owner,notes)=>{
+ const calc=calcRisk(aid,tid);
+ if(!calc) return;
+ const asset=state.assets.find(a=>a.id===aid);
+ const threat=state.threats.find(t=>t.id===tid);
+ const lvl=riskLevel(calc.netScore);
+ state.risks.push({
+ id:'R'+String(++_ridx).padStart(3,'0'),
+ assetId:aid,threatId:tid,
+ assetName:asset.name,threatName:threat.name,
+ baseScore:calc.baseScore,netScore:calc.netScore,
+ level:lvl.label,status,owner,notes,
+ prob:threat.prob,impact:Math.max(threat.impInt,threat.impDis)
+ });
+ };
+
+ addRisk('A001','T01','Abierto','CISO','Requires urgent PLC hardening');
+ addRisk('A001','T07','En tratamiento','OT Team','Evaluating QoS in OT network');
+ addRisk('A002','T04','Abierto','OT Team','HMI sin password. High priority.');
+ addRisk('A002','T12','Abierto','OT Team','Default Siemens credentials');
+ addRisk('A003','T09','En tratamiento','IT Security','Backup implemented, EDR missing');
+ addRisk('A003','T15','Abierto','IT Security','VPN without MFA for vendors');
+ addRisk('A004','T03','Abierto','IT Security','No IDS in OT network');
+ addRisk('A005','T23','Abierto','IT Security','USB not blocked on engineering station');
+ addRisk('A006','T12','Abierto','OT Team','Switch with admin/admin credentials');
+ addRisk('A001','T06','Abierto','OT Team','PLC firmware not updated since 2021');
+
+ renderAll();
+ alert(' Datos de ejemplo cargados correctamente.');
+}
+
+// UTILS 
+function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+function updateBadges(){
+ document.getElementById('nb-assets').textContent=state.assets.length;
+ document.getElementById('nb-threats').textContent=state.threats.length;
+ document.getElementById('nb-controls').textContent=state.controls.length;
+ document.getElementById('nb-risks').textContent=state.risks.length;
+}
+function renderAll(){
+ renderAssets(); renderThreats(); renderControls(); renderRisks();
+ renderDashboard(); updateBadges();
+}
+
+// INIT 
+(function init(){
+ // Load default threats
+ state.threats=[...DEFAULT_THREATS];
+ _tidx=DEFAULT_THREATS.length;
+
+ // Load default controls
+ state.controls=[...DEFAULT_CONTROLS];
+ _cidx=DEFAULT_CONTROLS.length;
+
+ renderAll();
+})();
+</script>
+</body>
+</html>

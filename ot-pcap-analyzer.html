@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OT Traffic Analyzer · CyberTools</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fafaf9;--s0:#ffffff;--s1:#fafaf9;--s2:#f4f3f1;--s3:#eeede9;
+  --border:#e5e3de;--border2:#d6d3cc;
+  --danger:#b91c1c;--warn:#c2600e;--ok:#166534;
+  --text:#1a1916;--textmed:#6b6860;--textdim:#9c9a96;
+  --r:3px;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;line-height:1.5;font-weight:300;}
+::selection{background:#1a191620}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--s2)}
+::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* ── TOPBAR ── */
+.topbar{height:56px;padding:0 32px;background:var(--s0);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-brand{font-family:'Instrument Serif',serif;font-size:20px;letter-spacing:-.3px;color:var(--text);}
+.topbar-brand em{font-style:normal;color:var(--textdim);}
+.topbar-actions{display:flex;gap:8px;}
+
+/* ── BUTTONS ── */
+button{font-family:'Inter',sans-serif;cursor:pointer;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:var(--r);font-size:11px;font-weight:400;letter-spacing:.3px;text-transform:uppercase;transition:background .15s,border-color .15s,color .15s;border:1px solid transparent;}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--textmed);}
+.btn-ghost:hover{background:var(--s2);border-color:var(--text);color:var(--text);}
+.btn-accent{background:var(--text);border-color:var(--text);color:#fff;}
+.btn-accent:hover{background:#2d2b27;}
+
+/* ── LAYOUT ── */
+.layout{display:flex;min-height:calc(100vh - 56px);}
+
+/* ── SIDEBAR ── */
+.sidebar{width:200px;flex-shrink:0;border-right:1px solid var(--border);padding:24px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;}
+.sidebar-group{margin-bottom:24px;}
+.sidebar-group-label{display:block;padding:0 20px;margin-bottom:4px;font-size:9px;font-weight:500;letter-spacing:.9px;text-transform:uppercase;color:var(--textdim);}
+.nav-item{display:flex;align-items:center;justify-content:space-between;padding:7px 20px;font-size:11px;font-weight:400;letter-spacing:.4px;text-transform:uppercase;color:var(--textmed);border-left:1px solid transparent;cursor:pointer;transition:color .15s,background .15s,border-color .15s;}
+.nav-item:hover{color:var(--text);background:var(--s2);}
+.nav-item.active{color:var(--text);background:var(--s2);border-left-color:var(--text);}
+.nav-count{font-size:9px;font-weight:500;padding:2px 6px;border-radius:var(--r);background:var(--s3);color:var(--textmed);}
+.nav-count.sev-crit{background:#fef2f2;color:var(--danger);border:1px solid #fca5a5;}
+.nav-count.sev-high{background:#fff7ed;color:var(--warn);border:1px solid #fdba74;}
+
+/* ── MAIN ── */
+.main{flex:1;padding:40px 48px;min-width:0;max-width:1200px;}
+.panel{display:none;}
+.panel.active{display:block;}
+
+/* ── PAGE HEADER ── */
+.page-hd{padding-bottom:24px;border-bottom:1px solid var(--border);margin-bottom:32px;}
+.page-title{font-family:'Instrument Serif',serif;font-size:32px;font-weight:400;letter-spacing:-.5px;}
+.page-sub{font-size:12px;font-weight:300;color:var(--textdim);margin-top:4px;}
+.page-hd-row{display:flex;align-items:flex-end;justify-content:space-between;}
+
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin-bottom:32px;}
+.kpi{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:16px 20px;position:relative;overflow:hidden;}
+.kpi-label{font-size:9px;font-weight:500;letter-spacing:.9px;text-transform:uppercase;color:var(--textdim);margin-bottom:10px;}
+.kpi-val{font-family:'Instrument Serif',serif;font-size:48px;line-height:1;color:var(--text);}
+.kpi-val.md{font-size:32px;}
+.kpi-val.sm{font-size:22px;font-family:'Inter',sans-serif;font-weight:300;}
+.kpi-sub{font-size:11px;font-weight:300;color:var(--textdim);margin-top:6px;}
+.kpi-stripe{position:absolute;bottom:0;left:0;right:0;height:2px;}
+.stripe-danger{background:var(--danger);}
+.stripe-warn{background:var(--warn);}
+.stripe-ok{background:var(--ok);}
+
+/* ── CARDS ── */
+.card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;}
+.card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:9px;font-weight:500;letter-spacing:.9px;text-transform:uppercase;color:var(--textdim);}
+.card-body{padding:20px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+
+/* ── BADGES ── */
+.badge{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:9px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;border:1px solid;}
+.b-crit{color:var(--danger);background:#fef2f2;border-color:#fca5a5;}
+.b-high{color:var(--warn);background:#fff7ed;border-color:#fdba74;}
+.b-med{color:#92400e;background:#fffbeb;border-color:#fcd34d;}
+.b-low{color:var(--ok);background:#f0fdf4;border-color:#86efac;}
+.b-neu{color:var(--textmed);background:var(--s2);border-color:var(--border2);}
+
+/* ── PROTO TAGS ── */
+.proto{display:inline-block;padding:2px 7px;border-radius:var(--r);font-size:9px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;border:1px solid var(--border);background:var(--s2);color:var(--textmed);margin:1px 2px;}
+.proto-ot{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;}
+.proto-it{background:#fff7ed;color:var(--warn);border-color:#fdba74;}
+.proto-danger{background:#fef2f2;color:var(--danger);border-color:#fca5a5;}
+
+/* ── PURDUE BADGE ── */
+.purdue{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:9px;font-weight:500;letter-spacing:.5px;text-transform:uppercase;border:1px solid;}
+.p0{color:var(--danger);background:#fef2f2;border-color:#fca5a5;}
+.p1{color:var(--warn);background:#fff7ed;border-color:#fdba74;}
+.p2{color:#92400e;background:#fffbeb;border-color:#fcd34d;}
+.p3{color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe;}
+.p4{color:var(--ok);background:#f0fdf4;border-color:#86efac;}
+.pnull{color:var(--textdim);background:var(--s2);border-color:var(--border2);}
+
+/* ── TABLES ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--s1);color:var(--textdim);font-size:9px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;padding:10px 16px;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;}
+td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;font-weight:300;vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--s2);}
+code{font-family:'SF Mono','Cascadia Code','Fira Code',monospace;font-size:11px;color:var(--textmed);}
+
+/* ── BARS ── */
+.bar-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.bar-lbl{font-size:12px;font-weight:300;color:var(--textmed);min-width:128px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;height:4px;background:var(--s3);border-radius:0;}
+.bar-fill{height:4px;border-radius:0;}
+.bar-val{font-size:11px;font-weight:300;color:var(--textdim);min-width:44px;text-align:right;}
+
+/* ── ALERT STRIPS ── */
+.strip{border-left:2px solid var(--border2);background:var(--s1);padding:12px 16px;border-radius:0 var(--r) var(--r) 0;margin-bottom:10px;font-size:13px;font-weight:300;line-height:1.7;}
+.strip strong{font-weight:500;}
+.strip-danger{border-color:var(--danger);background:#fef2f215;}
+.strip-warn{border-color:var(--warn);background:#fff7ed15;}
+.strip-ok{border-color:var(--ok);background:#f0fdf415;}
+
+/* ── EXEC BODY ── */
+.exec-prose{font-size:13px;font-weight:300;line-height:1.8;color:var(--text);margin-bottom:20px;}
+.exec-prose strong{font-weight:500;}
+
+/* ── CVE SCORE ── */
+.cve-score{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:10px;font-weight:500;border:1px solid;}
+.cs-crit{color:var(--danger);background:#fef2f2;border-color:#fca5a5;}
+.cs-high{color:var(--warn);background:#fff7ed;border-color:#fdba74;}
+.cs-med{color:#92400e;background:#fffbeb;border-color:#fcd34d;}
+.cs-low{color:var(--ok);background:#f0fdf4;border-color:#86efac;}
+
+/* ── MASTER/SLAVE ── */
+.ms-card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:12px;}
+.ms-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.ms-ip{font-family:'Instrument Serif',serif;font-size:22px;color:var(--text);}
+.ms-meta{font-size:11px;font-weight:300;color:var(--textdim);margin-top:2px;}
+.ms-cmds{display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;}
+.ms-cmd{font-size:9px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:var(--r);background:var(--s2);border:1px solid var(--border2);color:var(--textmed);}
+.ms-cmd.write{background:#fff7ed;border-color:#fdba74;color:var(--warn);}
+.ms-cmd.dng{background:#fef2f2;border-color:#fca5a5;color:var(--danger);}
+
+/* ── MAP ── */
+.map-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--s0);margin-bottom:16px;}
+.map-tabbar{background:var(--s1);border-bottom:1px solid var(--border);display:flex;}
+.map-tab{padding:9px 16px;font-size:9px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--textdim);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:'Inter',sans-serif;}
+.map-tab:hover{color:var(--text);}
+.map-tab.active{color:var(--text);border-bottom-color:var(--text);}
+.map-legend{display:flex;flex-wrap:wrap;gap:16px;padding:10px 16px;border-top:1px solid var(--border);background:var(--s1);}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:300;color:var(--textmed);}
+.leg-dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── TOOLTIP ── */
+.tip{position:absolute;background:var(--s0);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px;font-size:12px;font-weight:300;color:var(--text);pointer-events:none;z-index:200;max-width:230px;line-height:1.6;display:none;box-shadow:0 4px 16px rgba(26,25,22,.08);}
+.tip-title{font-family:'Instrument Serif',serif;font-size:16px;color:var(--text);margin-bottom:8px;}
+.tip-row{display:flex;justify-content:space-between;gap:12px;margin-bottom:2px;font-size:11px;}
+.tip-k{color:var(--textdim);}
+.tip-v{color:var(--text);font-weight:400;text-align:right;}
+.tip-sep{border-top:1px solid var(--border);margin:8px 0;}
+
+/* ── UPLOAD ── */
+#upload-view{min-height:calc(100vh - 56px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:28px;padding:48px;}
+.upload-title{font-family:'Instrument Serif',serif;font-size:32px;letter-spacing:-.5px;text-align:center;}
+.upload-desc{font-size:13px;font-weight:300;color:var(--textdim);text-align:center;max-width:400px;line-height:1.7;}
+.upload-box{width:100%;max-width:460px;border:1px dashed var(--border2);border-radius:var(--r);padding:48px 32px;text-align:center;cursor:pointer;background:var(--s0);position:relative;transition:border-color .15s,background .15s;}
+.upload-box:hover,.upload-box.drag{border-color:var(--text);background:var(--s2);}
+.upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-box-title{font-size:13px;font-weight:400;margin-bottom:4px;}
+.upload-box-hint{font-size:11px;font-weight:300;color:var(--textdim);}
+.upload-box-label{font-size:9px;font-weight:500;letter-spacing:.9px;text-transform:uppercase;color:var(--textdim);margin-bottom:12px;}
+.disclaimer{max-width:460px;border-left:2px solid var(--border2);padding:10px 14px;font-size:12px;font-weight:300;color:var(--textdim);line-height:1.7;}
+
+/* ── FILTER BAR ── */
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.chip{padding:4px 12px;border-radius:20px;font-size:10px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;border:1px solid var(--border2);background:transparent;color:var(--textmed);cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.chip:hover{border-color:var(--text);color:var(--text);}
+.chip.active{background:var(--text);border-color:var(--text);color:#fff;}
+
+/* ── LOADING ── */
+#loading-overlay{position:fixed;inset:0;background:rgba(26,25,22,.5);display:none;align-items:center;justify-content:center;z-index:500;}
+.loading-card{background:var(--s0);border:1px solid var(--border);border-radius:var(--r);padding:32px 48px;text-align:center;}
+.loading-title{font-family:'Instrument Serif',serif;font-size:20px;margin-bottom:6px;}
+.loading-sub{font-size:11px;font-weight:300;color:var(--textdim);}
+.spinner{width:20px;height:20px;border:2px solid var(--border2);border-top-color:var(--text);border-radius:50%;animation:spin .7s linear infinite;margin:16px auto 0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.empty-state{text-align:center;padding:48px 20px;color:var(--textdim);font-weight:300;font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="loading-overlay">
+  <div class="loading-card">
+    <div class="loading-title">Analizando captura</div>
+    <div class="loading-sub">Procesando paquetes en local…</div>
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-brand">OT<em>Analyzer</em></div>
+  <div class="topbar-actions" id="topbar-actions" style="display:none">
+    <button class="btn btn-ghost" onclick="exportExcel()">Exportar Excel</button>
+    <button class="btn btn-ghost" onclick="location.reload()">Nueva captura</button>
+  </div>
+</header>
+
+<!-- UPLOAD -->
+<div id="upload-view">
+  <div>
+    <div class="upload-title">OT Traffic Analyzer</div>
+    <div style="height:8px"></div>
+    <div class="upload-desc">Análisis forense de capturas de red en entornos industriales. Todo el procesamiento ocurre localmente en tu navegador.</div>
+  </div>
+  <div class="upload-box" id="drop-zone">
+    <input type="file" id="file-input" accept=".pcap,.pcapng,.cap">
+    <div class="upload-box-label">Archivo PCAP</div>
+    <div class="upload-box-title">Arrastra tu archivo o haz clic para seleccionar</div>
+    <div class="upload-box-hint" style="margin-top:4px">.pcap · .pcapng · .cap</div>
+  </div>
+  <button class="btn btn-ghost" onclick="loadDemo()">Cargar demostración</button>
+  <div class="disclaimer">
+    <strong style="font-weight:500">Privacidad:</strong> ningún dato abandona tu navegador. El análisis se realiza íntegramente en local.
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard-view" style="display:none">
+  <div class="layout">
+
+    <nav class="sidebar">
+      <div class="sidebar-group">
+        <span class="sidebar-group-label">Análisis</span>
+        <div class="nav-item active" data-tab="exec">Resumen ejecutivo</div>
+        <div class="nav-item" data-tab="map">Mapa de red</div>
+        <div class="nav-item" data-tab="stats">Estadísticas</div>
+      </div>
+      <div class="sidebar-group">
+        <span class="sidebar-group-label">Inventario</span>
+        <div class="nav-item" data-tab="assets">Activos <span class="nav-count" id="nc-assets">0</span></div>
+        <div class="nav-item" data-tab="ms">Maestros / Esclavos</div>
+      </div>
+      <div class="sidebar-group">
+        <span class="sidebar-group-label">Vulnerabilidades</span>
+        <div class="nav-item" data-tab="cves">CVEs <span class="nav-count" id="nc-cves">0</span></div>
+      </div>
+    </nav>
+
+    <main class="main">
+
+      <!-- EXEC -->
+      <div class="panel active" id="panel-exec">
+        <div class="page-hd">
+          <div class="page-hd-row">
+            <div class="page-title">Resumen ejecutivo</div>
+            <button class="btn btn-ghost" onclick="exportExcel()">Exportar Excel</button>
+          </div>
+          <div class="page-sub" id="exec-sub">—</div>
+        </div>
+        <div class="kpi-grid" id="exec-kpis"></div>
+        <div id="exec-strips"></div>
+      </div>
+
+      <!-- MAP -->
+      <div class="panel" id="panel-map">
+        <div class="page-hd">
+          <div class="page-title">Mapa de red</div>
+          <div class="page-sub">Topología detectada en la captura. Pasa el cursor sobre un nodo para ver detalles del activo.</div>
+        </div>
+        <div class="map-wrap">
+          <div class="map-tabbar">
+            <button class="map-tab active" id="mt-topo" onclick="switchMap('topo')">Conexiones</button>
+            <button class="map-tab" id="mt-purdue" onclick="switchMap('purdue')">Niveles Purdue</button>
+          </div>
+          <div id="map-topo"></div>
+          <div id="map-purdue" style="display:none"></div>
+          <div class="map-legend" id="map-legend"></div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="panel" id="panel-stats">
+        <div class="page-hd">
+          <div class="page-title">Estadísticas de tráfico</div>
+          <div class="page-sub">Distribución de protocolos, actividad por dirección IP y function codes OT detectados.</div>
+        </div>
+        <div class="kpi-grid" id="stats-kpis"></div>
+        <div class="grid2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">Protocolos detectados</span></div>
+            <div class="card-body" id="proto-bars"></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">IPs con más actividad</span></div>
+            <div class="card-body" id="ip-bars"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Function codes OT</span></div>
+          <div class="card-body" style="padding:0">
+            <div class="tbl-wrap" style="border:none;border-radius:0">
+              <table id="fc-table">
+                <thead><tr><th>Protocolo</th><th>FC</th><th>Descripción</th><th>Tipo</th><th>Ocurrencias</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSETS -->
+      <div class="panel" id="panel-assets">
+        <div class="page-hd">
+          <div class="page-title">Inventario de activos</div>
+          <div class="page-sub">Activos identificados con clasificación automática por vendor, tipo y nivel Purdue.</div>
+        </div>
+        <div class="tbl-wrap">
+          <table id="assets-table">
+            <thead><tr>
+              <th>IP</th><th>MAC</th><th>Vendor</th><th>Tipo</th><th>Purdue</th>
+              <th>Protocolos</th><th>Acciones OT</th><th>CVEs</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MASTER/SLAVE -->
+      <div class="panel" id="panel-ms">
+        <div class="page-hd">
+          <div class="page-title">Maestros / Esclavos</div>
+          <div class="page-sub">Relaciones de control detectadas en protocolos industriales.</div>
+        </div>
+        <div id="ms-list"></div>
+      </div>
+
+      <!-- CVES -->
+      <div class="panel" id="panel-cves">
+        <div class="page-hd">
+          <div class="page-title">CVEs identificados</div>
+          <div class="page-sub">Vulnerabilidades conocidas asociadas a los activos y vendors detectados en la captura.</div>
+        </div>
+        <div class="filter-bar" id="cve-filters"></div>
+        <div class="tbl-wrap">
+          <table id="cve-table">
+            <thead><tr>
+              <th>Severidad</th><th>CVE ID</th><th>Score</th><th>Activo</th>
+              <th>Descripción</th><th>Mitigación OT</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// PCAP PARSER
+// ══════════════════════════════════════════════════════════════
+function parsePcap(buf) {
+  const v = new DataView(buf);
+  const m = v.getUint32(0, false);
+  if (m === 0xa1b2c3d4) return parsePcapClassic(buf, false);
+  if (m === 0xd4c3b2a1) return parsePcapClassic(buf, true);
+  if (v.getUint32(0, true) === 0x0a0d0d0a) return parsePcapNg(buf);
+  throw new Error('Formato no reconocido. Usa archivos .pcap o .pcapng');
+}
+function parsePcapClassic(buf, le) {
+  const v = new DataView(buf); const pkts = []; let off = 24;
+  while (off + 16 <= buf.byteLength) {
+    const tsSec = v.getUint32(off, le), tsUsec = v.getUint32(off+4, le);
+    const capLen = v.getUint32(off+8, le), origLen = v.getUint32(off+12, le);
+    off += 16;
+    if (off + capLen > buf.byteLength) break;
+    pkts.push({ tsSec, tsUsec, origLen, data: new Uint8Array(buf, off, capLen) });
+    off += capLen;
+  }
+  return pkts;
+}
+function parsePcapNg(buf) {
+  const v = new DataView(buf); const pkts = []; let off = 0, le = true;
+  while (off + 12 <= buf.byteLength) {
+    const bt = v.getUint32(off, le), bl = v.getUint32(off+4, le);
+    if (bl < 12 || off + bl > buf.byteLength) break;
+    if (bt === 0x0a0d0d0a) le = v.getUint32(off+8, false) === 0x1a2b3c4d;
+    else if (bt === 0x00000006) {
+      const capLen = v.getUint32(off+20, le);
+      const tsUs = (v.getUint32(off+8, le) * 4294967296 + v.getUint32(off+12, le)) / 1000;
+      pkts.push({ tsSec: Math.floor(tsUs/1e6), tsUsec: tsUs%1e6, origLen: capLen, data: new Uint8Array(buf, off+24, Math.min(capLen, bl-28)) });
+    } else if (bt === 0x00000003) {
+      const capLen = v.getUint32(off+8, le);
+      pkts.push({ tsSec:0, tsUsec:0, origLen:capLen, data: new Uint8Array(buf, off+16, Math.min(capLen, bl-20)) });
+    }
+    off += bl;
+  }
+  return pkts;
+}
+
+// ══════════════════════════════════════════════════════════════
+// PACKET DECODER
+// ══════════════════════════════════════════════════════════════
+function decodePacket(pkt) {
+  const d = pkt.data, r = { ts: pkt.tsSec + pkt.tsUsec/1e6, len: pkt.origLen };
+  if (d.length < 14) return r;
+  r.srcMac = macS(d,6); r.dstMac = macS(d,0);
+  const et = (d[12]<<8)|d[13];
+  let ip0 = et === 0x8100 ? 18 : 14;
+  if (et === 0x0806 || (et===0x8100 && ((d[16]<<8)|d[17])===0x0806)) {
+    r.proto = 'ARP';
+    if (d.length >= ip0+28) { r.srcIp = ipS(d,ip0+14); r.dstIp = ipS(d,ip0+24); }
+    return r;
+  }
+  if (et !== 0x0800 && et !== 0x8100) return r;
+  if (d.length < ip0+20 || (d[ip0]>>4) !== 4) return r;
+  const ihl = (d[ip0]&0xf)*4;
+  r.ipProto = d[ip0+9]; r.srcIp = ipS(d,ip0+12); r.dstIp = ipS(d,ip0+16);
+  const t0 = ip0+ihl;
+  if (r.ipProto===6 && d.length>=t0+20) {
+    r.srcPort=(d[t0]<<8)|d[t0+1]; r.dstPort=(d[t0+2]<<8)|d[t0+3];
+    r.tcpPl = d.slice(t0+((d[t0+12]>>4)*4));
+    r.proto='TCP'; decodeApp(r);
+  } else if (r.ipProto===17 && d.length>=t0+8) {
+    r.srcPort=(d[t0]<<8)|d[t0+1]; r.dstPort=(d[t0+2]<<8)|d[t0+3];
+    r.udpPl=d.slice(t0+8); r.proto='UDP'; decodeAppUdp(r);
+  } else if (r.ipProto===1) r.proto='ICMP';
+  return r;
+}
+function decodeApp(p) {
+  const pl=p.tcpPl, dp=p.dstPort, sp=p.srcPort;
+  if ((dp===502||sp===502)&&pl.length>=8){ p.ap='MODBUS';p.mbFc=pl[7];p.mbFcName=mbFcN(p.mbFc); }
+  else if ((dp===102||sp===102)&&pl.length>3){ p.ap='S7COMM'; }
+  else if ((dp===44818||sp===44818)&&pl.length>=4){ p.ap='ENIP'; }
+  else if ((dp===20000||sp===20000)&&pl.length>=13){ p.ap='DNPV3';p.dnpFc=pl[12];p.dnpFcName=dnpFcN(p.dnpFc); }
+  else if ((dp===2404||sp===2404)&&pl.length>=6){ p.ap='IEC104'; }
+  else if (dp===21||sp===21){ p.ap='FTP';p.cleartext=1; }
+  else if (dp===23||sp===23){ p.ap='TELNET';p.cleartext=1; }
+  else if (dp===3389||sp===3389){ p.ap='RDP';p.itProto=1; }
+  else if (dp===445||sp===445){ p.ap='SMB';p.itProto=1; }
+}
+function decodeAppUdp(p) {
+  if (p.dstPort===47808||p.srcPort===47808) p.ap='BACnet';
+  else if (p.dstPort===34980||p.srcPort===34980) p.ap='PROFINET';
+}
+const MB_FC = {1:'Read Coils',2:'Read Discrete Inputs',3:'Read Holding Registers',4:'Read Input Registers',5:'Write Single Coil',6:'Write Single Register',8:'Diagnostics',15:'Write Multiple Coils',16:'Write Multiple Registers',22:'Mask Write Register',23:'Read/Write Multiple Registers'};
+const DNP_FC = {0:'Confirm',1:'Read',2:'Write',3:'Select',4:'Operate',5:'Direct Operate',6:'Direct Operate No Ack',129:'Response',130:'Unsolicited Response'};
+const mbFcN = fc => MB_FC[fc]||`FC${fc}`;
+const dnpFcN = fc => DNP_FC[fc]||`FC${fc}`;
+const macS = (d,o) => Array.from(d.slice(o,o+6)).map(b=>b.toString(16).padStart(2,'0')).join(':');
+const ipS = (d,o) => `${d[o]}.${d[o+1]}.${d[o+2]}.${d[o+3]}`;
+
+// ══════════════════════════════════════════════════════════════
+// VENDOR / TYPE / PURDUE
+// ══════════════════════════════════════════════════════════════
+const OUI = {'00:0b:ab':'Siemens','00:0e:8c':'Siemens','00:1b:1b':'Siemens','a4:5e:60':'Siemens','08:00:06':'Siemens','00:80:f4':'Schneider Electric','00:00:54':'Schneider Electric','00:00:bc':'Rockwell Automation','00:1d:9c':'Rockwell Automation','00:e0:4c':'ABB','00:30:d3':'ABB','f8:0f:41':'GE Automation','00:60:35':'GE','00:a0:f8':'Yokogawa','00:a0:3d':'Yokogawa','b8:27:eb':'Raspberry Pi','dc:a6:32':'Raspberry Pi','00:15:17':'Intel','00:50:56':'VMware','00:0c:29':'VMware','00:50:ba':'D-Link'};
+function vendorFromMac(mac){ return mac ? (OUI[mac.substring(0,8).toLowerCase()]||'Unknown') : 'Unknown'; }
+
+function inferType(a) {
+  const ps=a.protocols, v=(a.vendor||'').toLowerCase();
+  if (ps.includes('S7COMM')) return 'Siemens PLC';
+  if (ps.includes('ENIP')) return 'Rockwell PLC';
+  if (a.isMaster && ps.some(p=>['MODBUS','DNPV3','IEC104','S7COMM','ENIP'].includes(p))) return 'HMI / Eng. WS';
+  if (ps.includes('MODBUS')&&!a.isMaster) return 'Modbus RTU / PLC';
+  if (ps.includes('DNPV3')&&!a.isMaster) return 'DNP3 RTU';
+  if (ps.includes('IEC104')&&!a.isMaster) return 'IEC 104 RTU';
+  if (ps.includes('BACnet')) return 'BACnet Controller';
+  if (ps.includes('PROFINET')) return 'PROFINET Device';
+  if (ps.includes('SMB')||ps.includes('RDP')) return 'Engineering WS';
+  if (ps.includes('FTP')||ps.includes('TELNET')) return 'Legacy Device';
+  if (['siemens','schneider','rockwell','abb','yokogawa','ge'].some(k=>v.includes(k))) return v.includes('yokogawa')?'Yokogawa Device':v.includes('schneider')?'Schneider Device':v.includes('rockwell')?'Rockwell Device':v.includes('abb')?'ABB Device':v.includes('ge')?'GE Device':'Siemens Device';
+  return 'Endpoint';
+}
+
+function inferPurdue(a) {
+  const ps=a.protocols, v=(a.vendor||'').toLowerCase();
+  if (ps.some(p=>['MODBUS','DNPV3','IEC104','S7COMM','ENIP','PROFINET','BACnet'].includes(p)) && !a.isMaster) return 1;
+  if (a.isMaster && ps.some(p=>['MODBUS','DNPV3','IEC104','S7COMM','ENIP'].includes(p))) return 2;
+  if (ps.includes('FTP')||ps.includes('TELNET')) return 2;
+  if (ps.includes('SMB')||ps.includes('RDP')) return 3;
+  if (['siemens','schneider','rockwell','abb','yokogawa','ge'].some(k=>v.includes(k))) return 2;
+  if (['intel','vmware','dell','hp'].some(k=>v.includes(k))) return 3;
+  return null;
+}
+
+// ══════════════════════════════════════════════════════════════
+// CVE DATABASE
+// ══════════════════════════════════════════════════════════════
+const CVE_DB = [
+  {id:'CVE-2019-13945',score:9.8,sev:'CRITICAL',vendor:'Siemens',product:'S7-1200/1500',desc:'Autenticación omitida en CP 1543-1 permite acceso no autorizado vía Modbus TCP.',fix:'Actualizar firmware ≥ V2.2. Segmentar red OT.'},
+  {id:'CVE-2019-10929',score:9.8,sev:'CRITICAL',vendor:'Siemens',product:'S7-300/400',desc:'Desbordamiento de buffer en S7comm-plus. Ejecución de código remoto sin autenticación.',fix:'Deshabilitar S7comm-plus o implementar VPN. Parche SA-2019-003.'},
+  {id:'CVE-2022-38465',score:9.3,sev:'CRITICAL',vendor:'Siemens',product:'SIMATIC S7',desc:'Clave privada hardcoded en TIA Portal. Permite descifrar tráfico S7.',fix:'Actualizar TIA Portal V17+. Rotar certificados.'},
+  {id:'CVE-2021-22681',score:10.0,sev:'CRITICAL',vendor:'Rockwell',product:'Logix Controllers',desc:'Falsificación de solicitudes puede causar denegación de servicio en controladores Logix.',fix:'Parche Advisory 2021-003. Habilitar autenticación CIP.'},
+  {id:'CVE-2018-10952',score:9.8,sev:'CRITICAL',vendor:'Schneider',product:'Modicon M340',desc:'Acceso a memoria arbitraria mediante Modbus FC23 sin autenticación.',fix:'Firmware V3.40+. Whitelist Modbus en firewall industrial.'},
+  {id:'CVE-2020-7487',score:8.1,sev:'HIGH',vendor:'Schneider',product:'EcoStruxure',desc:'Autenticación débil en OPC UA permite escalada de privilegios.',fix:'Actualizar a EcoStruxure 2020. Autenticación por certificado.'},
+  {id:'CVE-2019-6543',score:8.8,sev:'HIGH',vendor:'Yokogawa',product:'STARDOM Controllers',desc:'FTP/Telnet legacy expone credenciales en texto plano.',fix:'Deshabilitar FTP/Telnet. Migrar a SSH/SFTP. Parche YSA-2019-001.'},
+  {id:'CVE-2020-14511',score:7.5,sev:'HIGH',vendor:'Generic',product:'Modbus TCP',desc:'Sin autenticación en Modbus TCP: cualquier host puede enviar function codes de escritura.',fix:'Firewall industrial con whitelist de FC. Modbus sobre TLS.'},
+  {id:'CVE-2021-38483',score:7.8,sev:'HIGH',vendor:'ABB',product:'AC500 PLC',desc:'Gestión incorrecta de sesiones Modbus. DoS mediante paquetes malformados.',fix:'Firmware V3.0.4.0+. Limitar conexiones concurrentes Modbus.'},
+  {id:'CVE-2022-34151',score:6.5,sev:'MEDIUM',vendor:'Generic',product:'DNP3',desc:'DNP3 sin Secure Authentication permite spoofing de mensajes de control.',fix:'Habilitar DNP3 SA v5. Monitorizar secuencias de objetos.'},
+  {id:'CVE-2019-18247',score:5.9,sev:'MEDIUM',vendor:'Generic',product:'IEC 60870-5-104',desc:'IEC 104 sin cifrado expone comandos de control en texto plano.',fix:'Tunelizar IEC 104 sobre VPN. Considerar IEC 62351.'},
+  {id:'CVE-2020-6998',score:5.3,sev:'MEDIUM',vendor:'Rockwell',product:'FactoryTalk',desc:'Deserialización insegura permite ejecución de código en WS.',fix:'Parche Advisory 2020-004. Aislar estaciones de ingeniería.'},
+  {id:'CVE-2017-9947',score:4.3,sev:'LOW',vendor:'Siemens',product:'SIMATIC HMI',desc:'Versión de firmware expuesta via HTTP sin autenticación.',fix:'Deshabilitar HTTP en HMI. Usar HTTPS.'},
+  {id:'CVE-2021-27477',score:3.7,sev:'LOW',vendor:'Generic',product:'BACnet',desc:'BACnet/IP sin autenticación expone objetos de building automation.',fix:'Segmentar red BACnet. Deshabilitar servicios innecesarios.'},
+];
+function matchCves(asset) {
+  const v=(asset.vendor||'').toLowerCase(), ps=asset.protocols;
+  return CVE_DB.filter(c=>{
+    const cv=c.vendor.toLowerCase();
+    if (cv==='generic') return ps.some(p=>c.product.toLowerCase().includes(p.toLowerCase()));
+    return v.includes(cv)||cv.includes(v.split(' ')[0]);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ANALYSIS ENGINE
+// ══════════════════════════════════════════════════════════════
+let R = null; // global result
+
+function analyze(pkts) {
+  const decoded = pkts.map(decodePacket).filter(p=>p.srcIp);
+  const assets={}, sessions={}, protoCount={}, fcStats={}, masterSlave={};
+  let totalBytes=0, firstTs=Infinity, lastTs=0;
+  const ipAct={};
+
+  for (const p of decoded) {
+    totalBytes+=p.len;
+    if (p.ts<firstTs) firstTs=p.ts;
+    if (p.ts>lastTs) lastTs=p.ts;
+    for (const ip of [p.srcIp,p.dstIp].filter(Boolean)) {
+      if (!assets[ip]) assets[ip]={ip,macs:new Set(),protocols:new Set(),vendors:new Set(),otActions:[],isMaster:false,isSlave:false};
+      ipAct[ip]=(ipAct[ip]||0)+1;
+    }
+    if (p.srcMac&&p.srcIp){ assets[p.srcIp].macs.add(p.srcMac); const v=vendorFromMac(p.srcMac); if(v!=='Unknown') assets[p.srcIp].vendors.add(v); }
+    const ap=p.ap||p.proto;
+    if (ap){ protoCount[ap]=(protoCount[ap]||0)+1; if(p.srcIp) assets[p.srcIp].protocols.add(ap); }
+    if (p.srcIp&&p.dstIp){
+      const key=[p.srcIp,p.dstIp].sort().join('↔');
+      if (!sessions[key]) sessions[key]={a:p.srcIp,b:p.dstIp,pkts:0,bytes:0,protos:new Set()};
+      sessions[key].pkts++; sessions[key].bytes+=p.len; if(ap) sessions[key].protos.add(ap);
+    }
+    if (p.ap==='MODBUS'&&p.mbFc!==undefined){
+      const fk=`MB_${p.mbFc}`;
+      fcStats[fk]=fcStats[fk]||{proto:'Modbus',fc:p.mbFc,name:p.mbFcName,count:0,dangerous:false};
+      fcStats[fk].count++;
+      const wFC=[5,6,15,16,22,23], dFC=[8,11];
+      if (dFC.includes(p.mbFc)) fcStats[fk].dangerous=true;
+      if (p.dstPort===502){
+        assets[p.srcIp].isMaster=true; assets[p.dstIp].isSlave=true;
+        const mk=p.srcIp+'→'+p.dstIp;
+        if (!masterSlave[mk]) masterSlave[mk]={master:p.srcIp,slave:p.dstIp,proto:'MODBUS',cmds:new Set(),writeCmds:0,readCmds:0};
+        masterSlave[mk].cmds.add(p.mbFcName);
+        if (wFC.includes(p.mbFc)){ masterSlave[mk].writeCmds++; assets[p.srcIp].otActions.push(`${p.mbFcName} → ${p.dstIp}`); }
+        else masterSlave[mk].readCmds++;
+      }
+    }
+    if (p.ap==='DNPV3'&&p.dnpFc!==undefined){
+      const fk=`DNP_${p.dnpFc}`;
+      fcStats[fk]=fcStats[fk]||{proto:'DNP3',fc:p.dnpFc,name:p.dnpFcName,count:0,dangerous:false};
+      fcStats[fk].count++;
+      if ([2,3,4,5,6].includes(p.dnpFc)){
+        assets[p.srcIp].isMaster=true;
+        const mk=p.srcIp+'→'+p.dstIp;
+        if (!masterSlave[mk]) masterSlave[mk]={master:p.srcIp,slave:p.dstIp,proto:'DNP3',cmds:new Set(),writeCmds:0,readCmds:0};
+        masterSlave[mk].cmds.add(p.dnpFcName);
+        if ([3,4,5].includes(p.dnpFc)) masterSlave[mk].writeCmds++; else masterSlave[mk].readCmds++;
+      }
+    }
+  }
+
+  const assetList = Object.values(assets).map(a=>{
+    const ps=Array.from(a.protocols), mac=Array.from(a.macs)[0]||'';
+    const vendor=Array.from(a.vendors)[0]||vendorFromMac(mac);
+    const asset={ip:a.ip,mac,vendor,protocols:ps,isMaster:a.isMaster,isSlave:a.isSlave,otActions:[...new Set(a.otActions)],pktCount:ipAct[a.ip]||0};
+    asset.type=inferType(asset); asset.purdue=inferPurdue(asset); asset.cves=matchCves(asset);
+    return asset;
+  });
+
+  const allCves=[], seen=new Set();
+  for (const a of assetList) for (const c of a.cves) if (!seen.has(c.id)){ seen.add(c.id); allCves.push({...c,affectedIp:a.ip}); }
+  allCves.sort((a,b)=>b.score-a.score);
+
+  return {
+    stats:{totalPackets:decoded.length,totalBytes,duration:lastTs-firstTs,firstTs,lastTs,uniqueIps:Object.keys(assets).length,protocols:protoCount,fcStats:Object.values(fcStats).sort((a,b)=>b.count-a.count),ipAct},
+    assets:assetList, sessions:Object.values(sessions), masterSlave:Object.values(masterSlave), allCves
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════
+function render(result) {
+  R = result;
+  document.getElementById('upload-view').style.display='none';
+  document.getElementById('dashboard-view').style.display='block';
+  document.getElementById('topbar-actions').style.display='flex';
+
+  const critC=result.allCves.filter(c=>c.sev==='CRITICAL').length;
+  const nc=document.getElementById('nc-cves');
+  nc.textContent=result.allCves.length;
+  nc.className='nav-count'+(critC>0?' sev-crit':result.allCves.filter(c=>c.sev==='HIGH').length>0?' sev-high':'');
+  document.getElementById('nc-assets').textContent=result.assets.length;
+
+  renderExec(result);
+  renderStats(result);
+  renderAssets(result);
+  renderMasterSlave(result);
+  renderCves(result);
+  renderMap(result);
+}
+
+// ── EXEC ──────────────────────────────────────────────────────
+function renderExec(r) {
+  const s=r.stats;
+  const critC=r.allCves.filter(c=>c.sev==='CRITICAL').length;
+  const highC=r.allCves.filter(c=>c.sev==='HIGH').length;
+  const unkn=r.assets.filter(a=>a.purdue===null).length;
+  const otP=Object.keys(s.protocols).filter(p=>['MODBUS','DNPV3','S7COMM','ENIP','IEC104','PROFINET','BACnet'].includes(p));
+  const writes=r.masterSlave.reduce((a,m)=>a+m.writeCmds,0);
+  const reads=r.masterSlave.reduce((a,m)=>a+m.readCmds,0);
+  const clP=Object.keys(s.protocols).filter(p=>['FTP','TELNET'].includes(p));
+  const itP=Object.keys(s.protocols).filter(p=>['SMB','RDP'].includes(p));
+  const vendors=[...new Set(r.assets.map(a=>a.vendor).filter(v=>v&&v!=='Unknown'))];
+  const risk=critC>0?'CRITICAL':highC>0?'HIGH':r.allCves.length>0?'MEDIUM':'LOW';
+  const riskBadge={'CRITICAL':'b-crit','HIGH':'b-high','MEDIUM':'b-med','LOW':'b-low'};
+  const stripe={'CRITICAL':'stripe-danger','HIGH':'stripe-warn','MEDIUM':'stripe-warn','LOW':'stripe-ok'};
+
+  document.getElementById('exec-sub').textContent=`${fmtTs(s.firstTs)} · ${fmtDur(s.duration)} · ${s.totalPackets.toLocaleString()} paquetes · ${fmtBytes(s.totalBytes)}`;
+
+  document.getElementById('exec-kpis').innerHTML=[
+    {label:'Exposición CVE', val:`<span class="badge ${riskBadge[risk]}">${risk}</span>`, sub:'basado en CVEs identificados', stripe:stripe[risk], raw:true},
+    {label:'CVEs', val:r.allCves.length, sub:`${critC} críticos · ${highC} altos`, stripe:critC>0?'stripe-danger':highC>0?'stripe-warn':'stripe-ok'},
+    {label:'Activos', val:r.assets.length, sub:`${unkn} sin clasificar`},
+    {label:'Protocolos OT', val:otP.length, sub:otP.slice(0,3).join(' · ')||'—'},
+    {label:'Relaciones M/S', val:r.masterSlave.length, sub:`${reads.toLocaleString()} lect. · ${writes.toLocaleString()} escrit.`},
+    {label:'Duración', val:fmtDur(s.duration), sub:fmtTs(s.firstTs), sm:true},
+  ].map(k=>`<div class="kpi">
+    <div class="kpi-label">${k.label}</div>
+    <div class="kpi-val${k.sm?' sm':k.raw?' md':''}">${k.val}</div>
+    <div class="kpi-sub">${k.sub}</div>
+    ${k.stripe?`<div class="kpi-stripe ${k.stripe}"></div>`:''}
+  </div>`).join('');
+
+  let strips='';
+  strips+=`<p class="exec-prose">La captura analizada abarca <strong>${fmtDur(s.duration)}</strong> de tráfico industrial registrado desde el <strong>${fmtTs(s.firstTs)}</strong>. Se procesaron <strong>${s.totalPackets.toLocaleString()} paquetes</strong> (${fmtBytes(s.totalBytes)}) con <strong>${r.assets.length} activos</strong> identificados.</p>`;
+
+  if (critC>0) {
+    const ips=[...new Set(r.allCves.filter(c=>c.sev==='CRITICAL').map(c=>c.affectedIp))].slice(0,3).join(', ');
+    strips+=`<div class="strip strip-danger"><strong>${critC} CVEs críticos identificados.</strong> Activos afectados: ${ips}. Revisar la sección CVEs para detalle y mitigaciones específicas.</div>`;
+  } else if (highC>0) {
+    strips+=`<div class="strip strip-warn"><strong>${highC} CVEs de severidad alta.</strong> No se encontraron CVEs críticos en los activos detectados.</div>`;
+  } else {
+    strips+=`<div class="strip strip-ok"><strong>Sin CVEs conocidos.</strong> No se encontraron vulnerabilidades conocidas asociadas a los activos y vendors identificados.</div>`;
+  }
+  if (otP.length>0) {
+    strips+=`<div class="strip strip-warn"><strong>Protocolos industriales activos:</strong> ${otP.join(', ')}. ${r.masterSlave.length>0?`${r.masterSlave.length} relaciones maestro-esclavo con ${reads.toLocaleString()} lecturas y ${writes.toLocaleString()} escrituras.`:''} ${vendors.length>0?`Vendors detectados: ${vendors.slice(0,4).join(', ')}.`:''}</div>`;
+  }
+  if (clP.length>0||itP.length>0) {
+    strips+=`<div class="strip strip-danger"><strong>Protocolos no recomendados en OT:</strong> ${[...clP,...itP].join(', ')} detectados en la red industrial.${clP.length?' Protocolos legacy transmiten credenciales en texto plano.':''}${itP.length?' Presencia de protocolos IT puede indicar segmentación insuficiente.':''}</div>`;
+  }
+  if (unkn>0) {
+    strips+=`<div class="strip strip-warn"><strong>${unkn} activo${unkn>1?'s':''} sin clasificar.</strong> No fue posible inferir el nivel Purdue de ${r.assets.filter(a=>a.purdue===null).map(a=>a.ip).join(', ')} por ausencia de protocolos OT identificables. Revisar en el inventario.</div>`;
+  }
+  document.getElementById('exec-strips').innerHTML=strips;
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function renderStats(r) {
+  const s=r.stats;
+  document.getElementById('stats-kpis').innerHTML=[
+    {label:'Total paquetes',val:s.totalPackets.toLocaleString(),sub:fmtBytes(s.totalBytes),sm:true},
+    {label:'IPs únicas',val:s.uniqueIps,sub:'activos detectados'},
+    {label:'Duración',val:fmtDur(s.duration),sub:'de captura',sm:true},
+    {label:'Paquetes / s',val:s.duration>0?(s.totalPackets/s.duration).toFixed(1):'—',sub:'media'},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.label}</div><div class="kpi-val${k.sm?' sm':''}">${k.val}</div><div class="kpi-sub">${k.sub}</div></div>`).join('');
+
+  const OT=['MODBUS','DNPV3','S7COMM','ENIP','IEC104','PROFINET','BACnet'];
+  const protos=Object.entries(s.protocols).sort((a,b)=>b[1]-a[1]);
+  const maxP=protos[0]?.[1]||1;
+  document.getElementById('proto-bars').innerHTML=protos.slice(0,12).map(([p,c])=>`
+    <div class="bar-row">
+      <div class="bar-lbl">${p}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(c/maxP*100).toFixed(1)}%;background:${OT.includes(p)?'var(--text)':'var(--border2)'}"></div></div>
+      <div class="bar-val">${c.toLocaleString()}</div>
+    </div>`).join('');
+
+  const ips=Object.entries(s.ipAct).sort((a,b)=>b[1]-a[1]);
+  const maxI=ips[0]?.[1]||1;
+  document.getElementById('ip-bars').innerHTML=ips.slice(0,10).map(([ip,c])=>`
+    <div class="bar-row">
+      <div class="bar-lbl"><code>${ip}</code></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(c/maxI*100).toFixed(1)}%;background:var(--text)"></div></div>
+      <div class="bar-val">${c.toLocaleString()}</div>
+    </div>`).join('');
+
+  document.querySelector('#fc-table tbody').innerHTML=s.fcStats.map(fc=>{
+    const type=fc.dangerous?`<span style="color:var(--danger);font-weight:400">Peligroso</span>`:fc.name.toLowerCase().includes('write')?`<span style="color:var(--warn);font-weight:400">Escritura</span>`:`<span style="color:var(--ok);font-weight:400">Lectura</span>`;
+    return `<tr><td>${fc.proto}</td><td><code>FC${fc.fc}</code></td><td>${fc.name}</td><td>${type}</td><td>${fc.count.toLocaleString()}</td></tr>`;
+  }).join('')||`<tr><td colspan="5" class="empty-state">No se detectaron function codes OT</td></tr>`;
+}
+
+// ── ASSETS ────────────────────────────────────────────────────
+function renderAssets(r) {
+  const PC={'MODBUS':'proto-ot','DNPV3':'proto-ot','S7COMM':'proto-ot','ENIP':'proto-ot','IEC104':'proto-ot','PROFINET':'proto-ot','BACnet':'proto-ot','TELNET':'proto-danger','FTP':'proto-danger','SMB':'proto-it','RDP':'proto-it'};
+  const PC2={0:'p0',1:'p1',2:'p2',3:'p3',4:'p4'};
+  document.querySelector('#assets-table tbody').innerHTML=r.assets.sort((a,b)=>b.pktCount-a.pktCount).map(a=>{
+    const protos=a.protocols.map(p=>`<span class="proto ${PC[p]||''}">${p}</span>`).join(' ');
+    const purdue=`<span class="purdue ${a.purdue!==null?PC2[a.purdue]:'pnull'}">${a.purdue!==null?'L'+a.purdue:'?'}</span>`;
+    const cveBadge=a.cves.length?`<span class="badge b-${a.cves[0].sev.toLowerCase()}">${a.cves.length} CVE${a.cves.length>1?'s':''}</span>`:'—';
+    return `<tr>
+      <td><code>${a.ip}</code></td>
+      <td><code style="font-size:10px">${a.mac||'—'}</code></td>
+      <td style="font-weight:400">${a.vendor||'—'}</td>
+      <td>${a.type}</td>
+      <td>${purdue}</td>
+      <td>${protos||'—'}</td>
+      <td style="font-size:11px;color:var(--textmed)">${a.otActions.slice(0,2).join('<br>')||'—'}</td>
+      <td>${cveBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MASTER/SLAVE ──────────────────────────────────────────────
+function renderMasterSlave(r) {
+  const el=document.getElementById('ms-list');
+  if (!r.masterSlave.length){ el.innerHTML=`<div class="empty-state">No se detectaron relaciones maestro-esclavo en los protocolos OT de la captura.</div>`; return; }
+  el.innerHTML=r.masterSlave.map(ms=>{
+    const cmds=Array.from(ms.cmds).map(c=>{
+      const d=c.toLowerCase().includes('diagnos')||c.toLowerCase().includes('force');
+      const w=c.toLowerCase().includes('write')||c.toLowerCase().includes('operate')||c.toLowerCase().includes('select');
+      return `<span class="ms-cmd ${d?'dng':w?'write':''}">${c}</span>`;
+    }).join('');
+    return `<div class="ms-card">
+      <div class="ms-row">
+        <div>
+          <span class="badge b-neu" style="margin-bottom:8px;display:inline-block">Master</span>
+          <div class="ms-ip">${ms.master}</div>
+          <div class="ms-meta">${ms.proto}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge b-neu" style="margin-bottom:8px;display:inline-block">Slave</span>
+          <div class="ms-ip">${ms.slave}</div>
+          <div class="ms-meta">${ms.readCmds.toLocaleString()} lecturas · ${ms.writeCmds.toLocaleString()} escrituras</div>
+        </div>
+      </div>
+      <div style="font-size:9px;font-weight:500;letter-spacing:.8px;text-transform:uppercase;color:var(--textdim);margin-bottom:6px">Comandos observados</div>
+      <div class="ms-cmds">${cmds}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── CVES ──────────────────────────────────────────────────────
+function renderCves(r) {
+  const fb=document.getElementById('cve-filters');
+  let active=null;
+  fb.innerHTML=['Todos','CRITICAL','HIGH','MEDIUM','LOW'].map(s=>`<button class="chip${s==='Todos'?' active':''}" data-sev="${s}">${s}${s!=='Todos'?` (${r.allCves.filter(c=>c.sev===s).length})`:''}</button>`).join('');
+  fb.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{
+    fb.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    active=b.dataset.sev==='Todos'?null:b.dataset.sev;
+    renderCveRows(r.allCves,active);
+  }));
+  renderCveRows(r.allCves,null);
+}
+function renderCveRows(cves,sev) {
+  const map={'CRITICAL':'cs-crit','HIGH':'cs-high','MEDIUM':'cs-med','LOW':'cs-low'};
+  const bmap={'CRITICAL':'b-crit','HIGH':'b-high','MEDIUM':'b-med','LOW':'b-low'};
+  const filtered=sev?cves.filter(c=>c.sev===sev):cves;
+  document.querySelector('#cve-table tbody').innerHTML=filtered.map(c=>`<tr>
+    <td><span class="badge ${bmap[c.sev]}">${c.sev}</span></td>
+    <td><code>${c.id}</code></td>
+    <td><span class="cve-score ${map[c.sev]}">${c.score.toFixed(1)}</span></td>
+    <td><code>${c.affectedIp}</code></td>
+    <td style="font-size:12px;font-weight:300;max-width:260px">${c.desc}</td>
+    <td style="font-size:11px;font-weight:300;color:var(--textmed);max-width:200px">${c.fix}</td>
+  </tr>`).join('')||`<tr><td colspan="6" class="empty-state">Sin resultados para este filtro</td></tr>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// MAPS
+// ══════════════════════════════════════════════════════════════
+const PURDUE_COL={0:'#b91c1c',1:'#c2600e',2:'#92400e',3:'#1d4ed8',4:'#166534',null:'#9c9a96'};
+
+function makeTip(container) {
+  let t=container.querySelector('.tip');
+  if (!t){ t=document.createElement('div'); t.className='tip'; container.style.position='relative'; container.appendChild(t); }
+  return t;
+}
+function tipHtml(a) {
+  const col=PURDUE_COL[a.purdue];
+  const pl=a.purdue!==null?`L${a.purdue}`:' Sin clasificar';
+  const cveRows=(a.cves||[]).slice(0,3).map(c=>`<div class="tip-row"><span class="tip-k">${c.id}</span><span class="tip-v" style="font-size:10px">${c.score}</span></div>`).join('');
+  return `<div class="tip-title">${a.ip}</div>
+    <div class="tip-row"><span class="tip-k">Tipo</span><span class="tip-v">${a.type}</span></div>
+    <div class="tip-row"><span class="tip-k">Vendor</span><span class="tip-v">${a.vendor||'Unknown'}</span></div>
+    ${a.mac?`<div class="tip-row"><span class="tip-k">MAC</span><span class="tip-v" style="font-size:10px">${a.mac}</span></div>`:''}
+    <div class="tip-row"><span class="tip-k">Purdue</span><span class="tip-v" style="color:${col}">${pl}</span></div>
+    <div class="tip-row"><span class="tip-k">Protocolos</span><span class="tip-v">${(a.protocols||[]).join(', ')||'—'}</span></div>
+    ${a.isMaster?`<div class="tip-row"><span class="tip-k">Rol</span><span class="tip-v">Maestro</span></div>`:''}
+    ${a.isSlave?`<div class="tip-row"><span class="tip-k">Rol</span><span class="tip-v">Esclavo</span></div>`:''}
+    ${cveRows?`<div class="tip-sep"></div>${cveRows}`:''}`;
+}
+function bindTip(g,a,tip,container,W) {
+  g.on('mouseover',()=>{ tip.style.display='block'; tip.innerHTML=tipHtml(a); })
+   .on('mousemove',ev=>{ const rect=container.getBoundingClientRect(); const tx=ev.clientX-rect.left+14, ty=ev.clientY-rect.top-10; tip.style.left=(tx+240>W?tx-254:tx)+'px'; tip.style.top=ty+'px'; })
+   .on('mouseout',()=>{ tip.style.display='none'; });
+}
+
+function drawEdge(svg,pa,pb,isOT,pkts) {
+  svg.append('line').attr('x1',pa.x).attr('y1',pa.y).attr('x2',pb.x).attr('y2',pb.y)
+    .attr('stroke',isOT?'var(--textmed)':'var(--border2)')
+    .attr('stroke-width',Math.min(2,0.5+(pkts||0)/500))
+    .attr('stroke-opacity',isOT?.55:.3);
+}
+
+function drawNode(svg,pos,a,R,tip,container,W) {
+  const col=PURDUE_COL[a.purdue]||'#9c9a96';
+  const g=svg.append('g').attr('transform',`translate(${pos.x},${pos.y})`).attr('cursor','default');
+  if ((a.cves||[]).length>0) {
+    const rc=a.cves[0].sev==='CRITICAL'?'#b91c1c':a.cves[0].sev==='HIGH'?'#c2600e':'#92400e';
+    g.append('circle').attr('r',R+5).attr('fill','none').attr('stroke',rc).attr('stroke-width',1).attr('stroke-dasharray','3,2').attr('opacity',.75);
+  }
+  g.append('circle').attr('r',R).attr('fill',col).attr('fill-opacity',.07).attr('stroke',col).attr('stroke-width',1);
+  if (a.isMaster) g.append('circle').attr('cx',R-5).attr('cy',-(R-5)).attr('r',4).attr('fill',col).attr('stroke','var(--s0)').attr('stroke-width',1.5);
+  g.append('text').attr('text-anchor','middle').attr('dy','-2px').attr('font-size','10px').attr('font-family','Inter,sans-serif').attr('font-weight','500').attr('fill',col).text(a.ip.split('.').slice(-2).join('.'));
+  g.append('text').attr('text-anchor','middle').attr('dy','10px').attr('font-size','9px').attr('font-family','Inter,sans-serif').attr('font-weight','300').attr('fill','var(--textdim)').text(a.type.length>14?a.type.substring(0,13)+'…':a.type);
+  bindTip(g,a,tip,container,W);
+}
+
+// MAP 1 — Topology (subnet clusters)
+function renderMapTopo(r) {
+  const container=document.getElementById('map-topo');
+  container.innerHTML='';
+  const W=container.clientWidth||860;
+  const sn={};
+  for (const a of r.assets){ const k=a.ip.split('.').slice(0,3).join('.'); if(!sn[k])sn[k]=[]; sn[k].push(a); }
+  const snK=Object.keys(sn);
+  const COLS=Math.min(snK.length,3), ROWS=Math.ceil(snK.length/COLS), NPR=4, R=24;
+  const snH=snK.map(k=>Math.max(110,Math.ceil(sn[k].length/NPR)*90+60));
+  const rowH=[]; for(let row=0;row<ROWS;row++){let h=0;for(let c=0;c<COLS;c++){const i=row*COLS+c;if(i<snK.length)h=Math.max(h,snH[i]);}rowH.push(h);}
+  const H=rowH.reduce((a,b)=>a+b,0)+20;
+  const svg=d3.select(container).append('svg').attr('width',W).attr('height',H).style('display','block');
+  const tip=makeTip(container);
+  const pos={};
+  snK.forEach((k,si)=>{
+    const col=si%COLS, row=Math.floor(si/COLS);
+    const ry=rowH.slice(0,row).reduce((a,b)=>a+b,0), cx=col*(W/COLS), cw=W/COLS, ch=snH[si];
+    svg.append('rect').attr('x',cx+8).attr('y',ry+8).attr('width',cw-16).attr('height',ch-12).attr('fill','none').attr('stroke','var(--border)').attr('rx',3);
+    svg.append('text').attr('x',cx+16).attr('y',ry+24).attr('font-size','9px').attr('font-family','Inter,sans-serif').attr('font-weight','500').attr('letter-spacing','.8px').attr('fill','var(--textdim)').text(`${k}.0/24`);
+    const nodes=sn[k];
+    nodes.forEach((a,ni)=>{
+      const nc=ni%NPR, nr=Math.floor(ni/NPR);
+      const usable=cw-48, step=nodes.length>1?Math.min(usable/Math.min(nodes.length,NPR),110):0;
+      const sx=cx+(cw-step*(Math.min(nodes.length,NPR)-1))/2;
+      pos[a.ip]={x:sx+nc*step, y:ry+52+nr*90};
+    });
+  });
+  const drawn=new Set();
+  for (const s of r.sessions){
+    const pa=pos[s.a], pb=pos[s.b]; if(!pa||!pb) continue;
+    const key=[s.a,s.b].sort().join('|'); if(drawn.has(key)) continue; drawn.add(key);
+    drawEdge(svg,pa,pb,Array.from(s.protos||[]).some(p=>['MODBUS','DNPV3','S7COMM','ENIP','IEC104','PROFINET','BACnet'].includes(p)),s.pkts);
+  }
+  for (const a of r.assets){ if(pos[a.ip]) drawNode(svg,pos[a.ip],a,R,tip,container,W); }
+}
+
+// MAP 2 — Purdue lanes
+function renderMapPurdue(r) {
+  const container=document.getElementById('map-purdue');
+  container.innerHTML='';
+  const W=container.clientWidth||860;
+  const LANES=[{l:4,lbl:'L4 — Enterprise / DMZ'},{l:3,lbl:'L3 — Historians / Eng. WS'},{l:2,lbl:'L2 — HMI / SCADA'},{l:1,lbl:'L1 — PLCs / RTUs / Drives'},{l:0,lbl:'L0 — Field / Sensors'},{l:null,lbl:'Sin clasificar'}];
+  const byL={}; LANES.forEach(l=>byL[String(l.l)]=[]);
+  for (const a of r.assets){ const k=String(a.purdue); (byL[k]||byL['null']).push(a); }
+  const active=LANES.filter(l=>byL[String(l.l)].length>0);
+  const NPR=6, R=24, LW=172;
+  const lh=active.map(l=>Math.max(80,Math.ceil(byL[String(l.l)].length/NPR)*90+40));
+  const H=lh.reduce((a,b)=>a+b,0)+4;
+  const svg=d3.select(container).append('svg').attr('width',W).attr('height',H).style('display','block');
+  const tip=makeTip(container);
+  const pos={}; let yOff=0;
+  active.forEach((lane,i)=>{
+    const y=yOff, h=lh[i], col=PURDUE_COL[lane.l], lk=String(lane.l);
+    if (i>0) svg.append('line').attr('x1',0).attr('y1',y).attr('x2',W).attr('y2',y).attr('stroke','var(--border)').attr('stroke-width',1);
+    svg.append('text').attr('x',10).attr('y',y+h/2).attr('dominant-baseline','middle').attr('font-size','9px').attr('font-family','Inter,sans-serif').attr('font-weight','500').attr('letter-spacing','.8px').attr('fill',col).attr('opacity',.8).text(lane.lbl);
+    const nodes=byL[lk], usable=W-LW-20, pr=Math.min(nodes.length,NPR);
+    const step=pr>1?Math.min(usable/pr,120):0;
+    const sx=LW+(usable-step*(pr-1))/2;
+    nodes.forEach((a,ni)=>{ pos[a.ip]={x:sx+(ni%NPR)*step, y:y+38+Math.floor(ni/NPR)*90}; });
+    yOff+=h;
+  });
+  const drawn=new Set();
+  for (const s of r.sessions){
+    const pa=pos[s.a], pb=pos[s.b]; if(!pa||!pb) continue;
+    const key=[s.a,s.b].sort().join('|'); if(drawn.has(key)) continue; drawn.add(key);
+    drawEdge(svg,pa,pb,Array.from(s.protos||[]).some(p=>['MODBUS','DNPV3','S7COMM','ENIP','IEC104','PROFINET','BACnet'].includes(p)),s.pkts);
+  }
+  for (const a of r.assets){ if(pos[a.ip]) drawNode(svg,pos[a.ip],a,R,tip,container,W); }
+}
+
+function renderMap(r) { renderMapTopo(r); renderMapPurdue(r); switchMap('topo'); }
+
+function switchMap(which) {
+  document.getElementById('mt-topo').classList.toggle('active',which==='topo');
+  document.getElementById('mt-purdue').classList.toggle('active',which==='purdue');
+  document.getElementById('map-topo').style.display=which==='topo'?'':'none';
+  document.getElementById('map-purdue').style.display=which==='purdue'?'':'none';
+  const leg=document.getElementById('map-legend');
+  if (which==='topo') {
+    leg.innerHTML=`<div class="leg-item"><div class="leg-dot" style="background:var(--textmed)"></div>Tráfico OT</div><div class="leg-item"><div class="leg-dot" style="background:var(--border2)"></div>Tráfico IT / genérico</div><div class="leg-item"><div class="leg-dot" style="background:#b91c1c;border-radius:0"></div>Anillo = CVEs detectados</div>`;
+  } else {
+    leg.innerHTML=Object.entries({0:'L0 Field',1:'L1 PLC/RTU',2:'L2 HMI/SCADA',3:'L3 Historian/WS',4:'L4 Enterprise',null:'Sin clasificar'}).map(([k,l])=>`<div class="leg-item"><div class="leg-dot" style="background:${PURDUE_COL[k==='null'?null:+k]}"></div>${l}</div>`).join('');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════════════
+function exportExcel() {
+  if (!R) return;
+  const wb=XLSX.utils.book_new(), s=R.stats;
+  const exec=[['OT Traffic Analyzer — Resumen Ejecutivo'],[],['Métrica','Valor'],['Total paquetes',s.totalPackets],['Total bytes',s.totalBytes],['Duración (s)',s.duration.toFixed(1)],['Activos',R.assets.length],['CVEs',R.allCves.length],['CVEs críticos',R.allCves.filter(c=>c.sev==='CRITICAL').length],[],['Protocolo','Paquetes'],...Object.entries(s.protocols).sort((a,b)=>b[1]-a[1])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(exec),'Resumen Ejecutivo');
+  const assetRows=[['IP','MAC','Vendor','Tipo','Nivel Purdue','Protocolos','Acciones OT','CVEs']];
+  for (const a of R.assets) assetRows.push([a.ip,a.mac||'',a.vendor||'',a.type,a.purdue!==null?`L${a.purdue}`:'Sin clasificar',a.protocols.join(', '),a.otActions.join('; '),a.cves.length]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(assetRows),'Inventario de Activos');
+  const msRows=[['Maestro','Esclavo','Protocolo','Lecturas','Escrituras','Comandos']];
+  for (const m of R.masterSlave) msRows.push([m.master,m.slave,m.proto,m.readCmds,m.writeCmds,Array.from(m.cmds).join(', ')]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(msRows),'Maestros-Esclavos');
+  const cveRows=[['Severidad','CVE ID','CVSS','Activo','Descripción','Mitigación']];
+  for (const c of R.allCves) cveRows.push([c.sev,c.id,c.score,c.affectedIp,c.desc,c.fix]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(cveRows),'CVEs');
+  XLSX.writeFile(wb,'OT_Analysis_Report.xlsx');
+}
+
+// ══════════════════════════════════════════════════════════════
+// DEMO
+// ══════════════════════════════════════════════════════════════
+function loadDemo(){ showLoading(); setTimeout(()=>{ render(buildDemo()); hideLoading(); },500); }
+function buildDemo() {
+  const now=Math.floor(Date.now()/1000);
+  const stats={totalPackets:48291,totalBytes:12847392,duration:3847,firstTs:now-3847,lastTs:now,uniqueIps:10,
+    protocols:{MODBUS:18432,TCP:11200,ARP:4200,S7COMM:3100,ENIP:2800,UDP:2400,DNPV3:1800,IEC104:1200,TELNET:840,SMB:320},
+    ipAct:{'192.168.10.5':9200,'192.168.10.10':8100,'192.168.10.1':7300,'192.168.20.15':6200,'10.0.0.1':4100,'192.168.10.20':3800,'192.168.10.30':2900,'10.0.0.50':1800,'192.168.20.100':1200,'192.168.10.40':800},
+    fcStats:[
+      {proto:'Modbus',fc:3,name:'Read Holding Registers',count:9800,dangerous:false},
+      {proto:'Modbus',fc:16,name:'Write Multiple Registers',count:3200,dangerous:false},
+      {proto:'Modbus',fc:1,name:'Read Coils',count:2800,dangerous:false},
+      {proto:'Modbus',fc:5,name:'Write Single Coil',count:1400,dangerous:false},
+      {proto:'Modbus',fc:8,name:'Diagnostics',count:12,dangerous:true},
+      {proto:'DNP3',fc:1,name:'Read',count:1800,dangerous:false},
+      {proto:'DNP3',fc:5,name:'Direct Operate',count:89,dangerous:false},
+    ]};
+  const assets=[
+    {ip:'192.168.10.5',mac:'00:0b:ab:12:34:56',vendor:'Siemens',type:'Siemens PLC',purdue:1,protocols:['S7COMM','MODBUS'],isMaster:false,isSlave:true,otActions:[],pktCount:9200,cves:CVE_DB.filter(c=>c.vendor==='Siemens').slice(0,3)},
+    {ip:'192.168.10.10',mac:'00:80:f4:aa:bb:cc',vendor:'Schneider Electric',type:'Modbus RTU / PLC',purdue:1,protocols:['MODBUS'],isMaster:false,isSlave:true,otActions:[],pktCount:8100,cves:CVE_DB.filter(c=>c.vendor==='Schneider').slice(0,2)},
+    {ip:'192.168.10.1',mac:'00:1d:9c:de:ef:01',vendor:'Rockwell Automation',type:'Rockwell PLC',purdue:1,protocols:['ENIP'],isMaster:false,isSlave:true,otActions:[],pktCount:7300,cves:CVE_DB.filter(c=>c.vendor==='Rockwell')},
+    {ip:'192.168.20.15',mac:'00:a0:f8:11:22:33',vendor:'Yokogawa',type:'HMI / Eng. WS',purdue:2,protocols:['MODBUS','S7COMM','ENIP','TELNET'],isMaster:true,isSlave:false,otActions:['Write Multiple Registers → 192.168.10.10','Write Single Coil → 192.168.10.5'],pktCount:6200,cves:CVE_DB.filter(c=>c.vendor==='Yokogawa')},
+    {ip:'10.0.0.1',mac:'00:50:ba:99:88:77',vendor:'Unknown',type:'Engineering WS',purdue:3,protocols:['SMB','TCP'],isMaster:false,isSlave:false,otActions:[],pktCount:4100,cves:[]},
+    {ip:'192.168.10.20',mac:'f8:0f:41:44:55:66',vendor:'GE',type:'DNP3 RTU',purdue:1,protocols:['DNPV3'],isMaster:false,isSlave:true,otActions:[],pktCount:3800,cves:CVE_DB.filter(c=>c.vendor==='Generic').slice(0,2)},
+    {ip:'192.168.10.30',mac:'b8:27:eb:77:88:99',vendor:'Unknown',type:'Endpoint',purdue:null,protocols:['TCP','UDP'],isMaster:false,isSlave:false,otActions:[],pktCount:2900,cves:[]},
+    {ip:'10.0.0.50',mac:'00:15:17:cc:dd:ee',vendor:'Intel',type:'Engineering WS',purdue:3,protocols:['TCP','SMB'],isMaster:false,isSlave:false,otActions:[],pktCount:1800,cves:[]},
+    {ip:'192.168.20.100',mac:'00:0c:29:ff:ee:dd',vendor:'VMware',type:'Endpoint',purdue:3,protocols:['TCP','IEC104'],isMaster:true,isSlave:false,otActions:['Write → 192.168.10.5'],pktCount:1200,cves:CVE_DB.filter(c=>c.vendor==='Generic').slice(2)},
+    {ip:'192.168.10.40',mac:'dc:a6:32:11:aa:bb',vendor:'Unknown',type:'Endpoint',purdue:null,protocols:['TCP'],isMaster:false,isSlave:false,otActions:[],pktCount:800,cves:[]},
+  ];
+  const sessions=[
+    {a:'192.168.20.15',b:'192.168.10.10',pkts:3200,bytes:480000,protos:new Set(['MODBUS'])},
+    {a:'192.168.20.15',b:'192.168.10.5',pkts:2800,bytes:420000,protos:new Set(['S7COMM'])},
+    {a:'192.168.20.15',b:'192.168.10.1',pkts:2200,bytes:310000,protos:new Set(['ENIP'])},
+    {a:'192.168.20.100',b:'192.168.10.5',pkts:1200,bytes:180000,protos:new Set(['IEC104'])},
+    {a:'192.168.20.15',b:'192.168.10.20',pkts:1800,bytes:240000,protos:new Set(['DNPV3'])},
+    {a:'10.0.0.50',b:'10.0.0.1',pkts:800,bytes:95000,protos:new Set(['SMB'])},
+    {a:'192.168.10.30',b:'192.168.10.10',pkts:400,bytes:60000,protos:new Set(['TCP'])},
+    {a:'10.0.0.1',b:'192.168.10.5',pkts:300,bytes:45000,protos:new Set(['SMB'])},
+    {a:'192.168.20.15',b:'192.168.10.30',pkts:200,bytes:30000,protos:new Set(['TELNET'])},
+  ];
+  const masterSlave=[
+    {master:'192.168.20.15',slave:'192.168.10.10',proto:'MODBUS',cmds:new Set(['Read Holding Registers','Write Multiple Registers','Write Single Coil','Read Coils']),writeCmds:1840,readCmds:3200},
+    {master:'192.168.20.15',slave:'192.168.10.5',proto:'S7COMM',cmds:new Set(['Read','Write']),writeCmds:620,readCmds:1480},
+    {master:'192.168.20.15',slave:'192.168.10.1',proto:'ENIP',cmds:new Set(['Get Attribute Single','Set Attribute Single']),writeCmds:380,readCmds:980},
+    {master:'192.168.20.100',slave:'192.168.10.5',proto:'IEC104',cmds:new Set(['Read','Write','Direct Operate']),writeCmds:89,readCmds:420},
+    {master:'192.168.20.15',slave:'192.168.10.20',proto:'DNP3',cmds:new Set(['Read','Direct Operate']),writeCmds:89,readCmds:620},
+  ];
+  const allCves=[], seen=new Set();
+  for (const a of assets) for (const c of a.cves) if (!seen.has(c.id)){ seen.add(c.id); allCves.push({...c,affectedIp:a.ip}); }
+  allCves.sort((a,b)=>b.score-a.score);
+  return {stats,assets,sessions,masterSlave,allCves};
+}
+
+// ══════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════
+function fmtBytes(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';if(b<1073741824)return(b/1048576).toFixed(1)+' MB';return(b/1073741824).toFixed(2)+' GB';}
+function fmtDur(s){if(!s||s<0)return '—';if(s<60)return s.toFixed(0)+'s';if(s<3600)return(s/60).toFixed(1)+' min';return(s/3600).toFixed(2)+' h';}
+function fmtTs(ts){if(!ts||ts===Infinity)return '—';return new Date(ts*1000).toLocaleString('es-ES');}
+function showLoading(){document.getElementById('loading-overlay').style.display='flex';}
+function hideLoading(){document.getElementById('loading-overlay').style.display='none';}
+
+// ══════════════════════════════════════════════════════════════
+// EVENTS
+// ══════════════════════════════════════════════════════════════
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('panel-'+item.dataset.tab).classList.add('active');
+  });
+});
+
+const dz=document.getElementById('drop-zone'), fi=document.getElementById('file-input');
+fi.addEventListener('change',e=>{ if(e.target.files[0]) processFile(e.target.files[0]); });
+dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('drag'); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); });
+
+function processFile(file) {
+  showLoading();
+  const rdr=new FileReader();
+  rdr.onload=e=>{ try{ render(analyze(parsePcap(e.target.result))); } catch(err){ alert('Error: '+err.message); } hideLoading(); };
+  rdr.readAsArrayBuffer(file);
+}
+</script>
+</body>
+</html>
